@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<!--[if IE 8]> <html lang="en" class="ie8 no-js"> <![endif]-->
+<!--[if IE 9]> <html lang="en" class="ie9 no-js"> <![endif]-->
+<!--[if !IE]><!-->
+<html lang="en">
+<!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <title>redis sentinel（哨兵模式）高可用集群搭建及spring集成 | Hexo</title>
+
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <meta name="description" content="本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis sentinel（哨兵模式）高可用集群搭建及spring集成">
+<meta property="og:url" content="http://yoursite.com/2017/03/23/redis-sentinel（哨兵模式）高可用集群搭建及spring集成/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。">
+<meta property="og:image" content="http://on8y4ksa8.bkt.clouddn.com/17-3-23/1417705-file_1490244393480_232c.png">
+<meta property="og:image" content="http://on8y4ksa8.bkt.clouddn.com/17-3-23/63944901-file_1490244479018_b31b.png">
+<meta property="og:image" content="http://on8y4ksa8.bkt.clouddn.com/17-3-23/51631728-file_1490244543432_6e50.png">
+<meta property="og:image" content="http://on8y4ksa8.bkt.clouddn.com/17-3-23/71163166-file_1490244585501_5e72.png">
+<meta property="og:updated_time" content="2017-03-23T09:50:49.045Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="redis sentinel（哨兵模式）高可用集群搭建及spring集成">
+<meta name="twitter:description" content="本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。">
+<meta name="twitter:image" content="http://on8y4ksa8.bkt.clouddn.com/17-3-23/1417705-file_1490244393480_232c.png">
+  
+    <link rel="alternative" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.ico">
+  
+    
+  <meta content="{{ title }}" name="description">
+  <meta content="{{ title }}" name="keywords">
+  <meta content="{{ title }}" name="author">
+
+  <link href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700|PT+Sans+Narrow|Source+Sans+Pro:200,300,400,600,700,900&amp;subset=all" rel="stylesheet" type="text/css">
+
+  <!-- Global styles START -->   
+  <link rel="stylesheet" href="/metronic/assets/plugins/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/metronic/assets/plugins/bootstrap/css/bootstrap.min.css">
+  <!-- Global styles END --> 
+   
+  <!-- Page level plugin styles START -->
+  <link rel="stylesheet" href="/metronic/assets/pages/css/animate.css">
+  <link rel="stylesheet" href="/metronic/assets/plugins/owl.carousel/assets/owl.carousel.css">
+  <!-- Page level plugin styles END -->
+
+  <!-- Theme styles START -->
+  <link rel="stylesheet" href="/metronic/assets/pages/css/components.css">
+  <link rel="stylesheet" href="/metronic/assets/pages/css/slider.css">
+  <link rel="stylesheet" href="/metronic/assets/corporate/css/style.css">
+  <link rel="stylesheet" href="/metronic/assets/pages/css/portfolio.css">
+  <link rel="stylesheet" href="/metronic/assets/corporate/css/style-responsive.css">
+  <link rel="stylesheet" href="/metronic/assets/corporate/css/themes/blue.css">
+  <link rel="stylesheet" href="/css/theme-styles.css">
+  <!-- Theme styles END -->
+</head>
+
+<body class="corporate">
+  <!-- BEGIN TOP BAR -->
+<div class="pre-header">
+  <div class="container">
+    <div class="row">
+      <!-- BEGIN TOP BAR LEFT PART -->
+      <div class="col-md-6 col-sm-6 col-xs-9 additional-shop-info">
+	<ul class="list-unstyled list-inline">
+	  <li><i class="fa fa-phone"></i><span>15008281858</span></li>
+	  <li><i class="fa fa-envelope-o"></i><span>xiaoyu-zhou@qq.com</span></li>
+	</ul>
+      </div>
+      <!-- END TOP BAR LEFT PART -->
+      <!-- BEGIN TOP BAR MENU -->
+      <div class="col-md-6 col-sm-6 col-xs-3 additional-nav">
+	<ul class="list-unstyled list-inline pull-right">
+	  <li><a href="/login">Log In</a></li>
+	</ul>
+      </div>
+      <!-- END TOP BAR MENU -->
+    </div>
+  </div>        
+</div>
+<!-- END TOP BAR -->
+<!-- BEGIN HEADER -->
+<div class="header">
+  <div class="container">
+    <!--<a class="site-logo" href="/" id="logo">Hexo</a>-->
+
+    <a class="site-logo" href="/">
+      <img src="/metronic/assets/corporate/img/logos/logo-corp-blue.png" alt="Metronic FrontEnd">
+    </a>
+
+    <a href="javascript:void(0);" class="mobi-toggler"><i class="fa fa-bars"></i></a>
+
+    <!-- BEGIN NAVIGATION -->
+    <div class="header-navigation pull-right font-transform-inherit">
+      <ul>
+	
+	<li class="">
+	  <a  href="/">Home</a>
+	</li>
+	
+	<li class="">
+	  <a  href="/projects/">Projects</a>
+	</li>
+	
+	<li class="">
+	  <a  href="/archives/">Blog</a>
+	</li>
+	
+	<li class="">
+	  <a  href="/contact/">Contact</a>
+	</li>
+	
+	<li class="">
+	  <a  href="/about/">About</a>
+	</li>
+	
+	<!-- BEGIN TOP SEARCH -->
+	<li class="menu-search">
+	  <span class="sep"></span>
+	  <i class="fa fa-search search-btn"></i>
+	  <div class="search-box">
+	    <form action="#">
+	      <div class="input-group">
+		<input type="text" placeholder="Search" class="form-control st-default-search-input">
+		<span class="input-group-btn">
+		  <button class="btn btn-primary" type="submit">Search</button>
+		</span>
+	      </div>
+	    </form>
+	  </div> 
+	</li>
+	<!-- END TOP SEARCH -->
+      </ul>
+    </div>
+    <!-- END NAVIGATION -->
+  </div>
+</div>
+<!-- Header END -->
+
+  <div class="container">
+  <ul class="breadcrumb">
+    <li><a href="/">Home</a></li>
+    <li><a href="/archives/">Blog</a></li>
+    <li class="active">Post</li>
+  </ul>
+  <section id="main">
+    
+    <h2 itemprop="name">
+      <a class="article-title" href="/2017/03/23/redis-sentinel（哨兵模式）高可用集群搭建及spring集成/">redis sentinel（哨兵模式）高可用集群搭建及spring集成</a>
+    </h2>
+
+
+    <div class="row">
+<div class="col-md-9 col-sm-9 blog-posts">
+<article id="post-redis-sentinel（哨兵模式）高可用集群搭建及spring集成" class="article article-type-post blog-item" itemscope itemprop="blogPost">
+  <div class="article-meta">
+  </div>
+  <div class="article-inner">
+    
+    
+    <header class="article-header">
+      <ul class="blog-info">
+	<li><i class="fa fa-user"></i> Anonymous</li>
+	<li><i class="fa fa-calendar"></i>
+	  <time datetime="2017-03-23T09:42:36.000Z" itemprop="datePublished">2017/03/23</time>
+
+	</li>
+	<li class="hidden-xs"><i class="fa fa-comments"></i>
+	  <a href="http://yoursite.com/2017/03/23/redis-sentinel（哨兵模式）高可用集群搭建及spring集成/#disqus_thread" class="article-comment-link">Comments</a>
+	</li>
+	<li class="hidden-xs"><i class="fa fa-tags"></i> 
+	  
+  
+    <a href="/tags/redis/" title="redis">redis</a>,
+  
+    <a href="/tags/sentinel/" title="sentinel">sentinel</a>,
+  
+    <a href="/tags/spring-data-redis/" title="spring-data-redis">spring-data-redis</a>
+  
+
+
+	</li>
+      </ul>
+      
+  <div class="article-category">
+    
+    Category: 
+    
+    Categories:
+    <a class="article-category-link" href="/categories/redis/">redis</a>
+  </div>
+  <br>
+
+
+    </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。</p>
+</blockquote>
+<a id="more"></a>
+<h2 id="一、Sentinel介绍"><a href="#一、Sentinel介绍" class="headerlink" title="一、Sentinel介绍"></a>一、Sentinel介绍</h2><p>Sentinel是Redis的高可用性（HA）解决方案，由一个或多个Sentinel实例组成的Sentinel系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器故障时，自动将下线主服务器属下的某个从服务器升级为新的主服务器，然后由新的主服务器代替已下线的主服务器继续处理命令请求。Redis提供的sentinel（哨兵）机制，通过sentinel模式启动redis后，自动监控master/slave的运行状态，<strong>基本原理是：心跳机制+投票裁决</strong></p>
+<ul>
+<li>监控（Monitoring）： Sentinel 会不断地检查你的主服务器和从服务器是否运作正常。</li>
+<li>提醒（Notification）： 当被监控的某个 Redis 服务器出现问题时， Sentinel 可以通过 API向管理员或者其他应用程序发送通知。</li>
+<li>自动故障迁移（Automatic failover）： 当一个主服务器不能正常工作时， Sentinel 会开始一次自动故障迁移操作， 它会将失效主服务器的其中一个从服务器选举出来，升级为新的主服务器， 并让失效主服务器的其他从服务器改为复制新的主服务器； 当客户端试图连接失效的主服务器时， 集群也会向客户端返回新主服务器的地址， 使得集群可以使用新主服务器代替失效服务器。<h2 id="二、Sentinel的主从原理"><a href="#二、Sentinel的主从原理" class="headerlink" title="二、Sentinel的主从原理"></a>二、Sentinel的主从原理</h2>以下为Sentinel架构以及主从切换图：</li>
+</ul>
+<p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/1417705-file_1490244393480_232c.png" alt=""></p>
+<p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/63944901-file_1490244479018_b31b.png" alt=""></p>
+<p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/51631728-file_1490244543432_6e50.png" alt=""></p>
+<p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/71163166-file_1490244585501_5e72.png" alt=""></p>
+<p>Jedis2.2.2之前版本，因为主从实例地址(IP PORT)是不同的，当故障发生进行主从切换后，应用程序无法知道新地址，故在Jedis2.2.2中新增了对Sentinel的支持，应用通过redis.clients.jedis.JedisSentinelPool.getResource()取得的Jedis实例会及时更新到新的主实例地址。</p>
+<h2 id="三、Redis-Sentinel高可用集群搭建"><a href="#三、Redis-Sentinel高可用集群搭建" class="headerlink" title="三、Redis Sentinel高可用集群搭建"></a>三、Redis Sentinel高可用集群搭建</h2><p>首先稍微介绍下如何在linux上安装redis</p>
+<h3 id="redis安装"><a href="#redis安装" class="headerlink" title="redis安装"></a>redis安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ wget http://download.redis.io/releases/redis-3.2.8.tar.gz</div><div class="line">$ tar xzf redis-3.2.8.tar.gz</div><div class="line">$ <span class="built_in">cd</span> redis-3.2.8</div><div class="line">$ make</div></pre></td></tr></table></figure>
+<p>测试：<br>首先启动redis服务<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-server</div></pre></td></tr></table></figure></p>
+<p>然后打开一个新的命令窗口，启动redis client端进行测试。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli </div><div class="line">127.0.0.1:6379&gt; <span class="built_in">set</span> name fish</div><div class="line">OK</div><div class="line">127.0.0.1:6379&gt; get name</div><div class="line"><span class="string">"fish"</span></div></pre></td></tr></table></figure></p>
+<h4 id="redis-sentinel集群搭建"><a href="#redis-sentinel集群搭建" class="headerlink" title="redis sentinel集群搭建"></a>redis sentinel集群搭建</h4><p>硬件条件有限，这里我将采用伪分布式进行搭建，所有节点都在同一台虚拟机，通过不同端口区分：2个哨兵，1个主redis，2个从redis<br>首先在redis目录创建conf目录，然后在其中添加一下配置文件，配置文件如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8/conf$ ls -1</div><div class="line">redis-master-6379.conf</div><div class="line">redis-slave-6380.conf</div><div class="line">redis-slave-6381.conf</div><div class="line">sentinel-63791.conf</div><div class="line">sentinel-63792.conf</div></pre></td></tr></table></figure>
+<p>redis节点配置可通过复制redis目录下的redis.conf默认配置进行相应修改，sentinel节点的配置文件则可通过复制redis目录下的sentinel.conf配置内容进行相应修改。<br>sentinel_63791.conf 配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">port 63791</div><div class="line">daemonize yes</div><div class="line">logfile <span class="string">"/var/log/sentinel_63791.log"</span></div><div class="line"><span class="comment">#master-1</span></div><div class="line">sentinel monitor master-1 192.168.78.99 6379 2</div><div class="line">sentinel down-after-milliseconds master-1 5000</div><div class="line">sentinel failover-timeout master-1 18000</div><div class="line">sentinel auth-pass master-1 yingjun</div><div class="line">sentinel parallel-syncs master-1 1</div></pre></td></tr></table></figure></p>
+<p>sentinel_63792.conf 配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">port 63792</div><div class="line">daemonize yes</div><div class="line">logfile <span class="string">"/var/log/sentinel_63792.log"</span></div><div class="line"><span class="comment">#master-1</span></div><div class="line">sentinel monitor master-1 192.168.78.99 6379 2</div><div class="line">sentinel down-after-milliseconds master-1 5000</div><div class="line">sentinel failover-timeout master-1 18000</div><div class="line">sentinel auth-pass master-1 yingjun</div><div class="line">sentinel parallel-syncs master-1 1</div></pre></td></tr></table></figure></p>
+<p>redis_master_6379.conf 配置：<br>在原配置文件中作如下修改：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">port 6379</div><div class="line">daemonize yes</div><div class="line">requirepass yingjun</div><div class="line">masterauth yingjun</div></pre></td></tr></table></figure></p>
+<p>redis_slave_6380.conf 配置：<br>在原配置文件中作如下修改：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">port 6380</div><div class="line">daemonize yes</div><div class="line">requirepass yingjun</div><div class="line">slaveof 192.168.78.99 6379</div><div class="line">masterauth yingjun</div></pre></td></tr></table></figure></p>
+<p>redis_slave_6381.conf 配置：<br>在原配置文件中作如下修改：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">port 6381</div><div class="line">daemonize yes</div><div class="line">requirepass yingjun</div><div class="line">slaveof 192.168.78.99 6379</div><div class="line">masterauth yingjun</div></pre></td></tr></table></figure></p>
+<p>按如下顺序依次启动服务：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">./redis-server ../conf/redis_master_6379.conf</div><div class="line">./redis-server ../conf/redis_slave_6381.conf    </div><div class="line">./redis-server ../conf/redis_slave_6382.conf    </div><div class="line">./redis-sentinel ../conf/sentinel_63791.conf</div><div class="line">./redis-sentinel ../conf/sentinel_63792.conf</div></pre></td></tr></table></figure></p>
+<p>查看进程是否都已经启动：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~$ ps -ef|grep redis</div><div class="line">fish     30233  2408  0 15:23 ?        00:00:03 src/redis-server *:6379</div><div class="line">fish     30257  2408  0 15:24 ?        00:00:03 src/redis-server *:6380</div><div class="line">fish     30270  2408  0 15:24 ?        00:00:03 src/redis-server *:6381</div><div class="line">fish     30503  2408  0 16:06 ?        00:00:00 src/redis-sentinel *:63791 [sentinel]</div><div class="line">fish     30514  2408  0 16:06 ?        00:00:00 src/redis-sentinel *:63792 [sentinel]</div><div class="line">fish     30549  8143  0 16:09 pts/18   00:00:00 grep --color=auto redis</div></pre></td></tr></table></figure>
+<p>查看master的状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 6379</div><div class="line">10.14.137.85:6379&gt; <span class="built_in">set</span> name tom</div><div class="line">(error) NOAUTH Authentication required.</div><div class="line">10.14.137.85:6379&gt; auth fish@123</div><div class="line">OK</div><div class="line">10.14.137.85:6379&gt; info replication</div><div class="line"><span class="comment"># Replication</span></div><div class="line">role:master</div><div class="line">connected_slaves:2</div><div class="line">slave0:ip=10.14.137.85,port=6380,state=online,offset=66732,lag=1</div><div class="line">slave1:ip=10.14.137.85,port=6381,state=online,offset=66732,lag=1</div><div class="line">master_repl_offset:66871</div><div class="line">repl_backlog_active:1</div><div class="line">repl_backlog_size:1048576</div><div class="line">repl_backlog_first_byte_offset:2</div><div class="line">repl_backlog_histlen:66870</div><div class="line">10.14.137.85:6379&gt;</div></pre></td></tr></table></figure></p>
+<p>可以看到role为master，同时显示了旗下有两个slave<br>通过src/redis-cli -h 10.14.137.85 -p 6379命令登录master客户端，如何redis设置了password，此时可以进入，但是不能进行操作，需通过autho password命令授权后，在可进行其他操作。也可登录时加上-a password参数指定密码。</p>
+<p>查看slave的状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 6380</div><div class="line">10.14.137.85:6380&gt; get name</div><div class="line">(error) NOAUTH Authentication required.</div><div class="line">10.14.137.85:6380&gt; auth fish@123</div><div class="line">OK</div><div class="line">10.14.137.85:6380&gt; info replication</div><div class="line"><span class="comment"># Replication</span></div><div class="line">role:slave</div><div class="line">master_host:10.14.137.85</div><div class="line">master_port:6379</div><div class="line">master_link_status:up</div><div class="line">master_last_io_seconds_ago:0</div><div class="line">master_sync_in_progress:0</div><div class="line">slave_repl_offset:84567</div><div class="line">slave_priority:100</div><div class="line">slave_read_only:1</div><div class="line">connected_slaves:0</div><div class="line">master_repl_offset:0</div><div class="line">repl_backlog_active:0</div><div class="line">repl_backlog_size:1048576</div><div class="line">repl_backlog_first_byte_offset:0</div><div class="line">repl_backlog_histlen:0</div><div class="line">10.14.137.85:6380&gt;</div></pre></td></tr></table></figure></p>
+<p>可以看到role为slave，只读不能写</p>
+<p>查看sentinel的状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 63791</div><div class="line">10.14.137.85:63791&gt; info sentinel</div><div class="line">DENIED Redis is running <span class="keyword">in</span> protected mode because protected mode is enabled, no <span class="built_in">bind</span> address was specified, no authentication password is requested to clients. In this mode connections are only accepted from the loopback interface. If you want to connect from external computers to Redis you may adopt one of the following solutions: 1) Just <span class="built_in">disable</span> protected mode sending the <span class="built_in">command</span> <span class="string">'CONFIG SET protected-mode no'</span> from the loopback interface by connecting to Redis from the same host the server is running, however MAKE SURE Redis is not publicly accessible from internet <span class="keyword">if</span> you <span class="keyword">do</span> so. Use CONFIG REWRITE to make this change permanent. 2) Alternatively you can just <span class="built_in">disable</span> the protected mode by editing the Redis configuration file, and setting the protected mode option to <span class="string">'no'</span>, and <span class="keyword">then</span> restarting the server. 3) If you started the server manually just <span class="keyword">for</span> testing, restart it with the <span class="string">'--protected-mode no'</span> option. 4) Setup a <span class="built_in">bind</span> address or an authentication password. NOTE: You only need to <span class="keyword">do</span> one of the above things <span class="keyword">in</span> order <span class="keyword">for</span> the server to start accepting connections from the outside.</div><div class="line">10.14.137.85:63791&gt;</div></pre></td></tr></table></figure></p>
+<p>从以上输出可以发现，竟然出错了，仔细查看输出信息，说是redis运行在保护模式<br>protected-mode 是为了禁止公网访问redis cache，加强redis安全的。它启用的条件，有两个：</p>
+<ul>
+<li>没有bind IP</li>
+<li>没有设置访问密码</li>
+</ul>
+<p>如果启用了，则只能够通过lookback ip（127.0.0.1）访问Redis cache，如果从外网访问，则会返回相应的错误信息，就是上图中的信息。<br>因此在新的版本中，应该配置绑定IP和访问密码，这样的话才不会报错误<br>这里master及两台slave redis由于设置了pass，所以不会提示，但sentinel既没设置pass也没绑定ip，所以连接sentinel时出现以上提示，解决方案：</p>
+<ol>
+<li>更改配置文件，将protected-mode设置为no</li>
+<li>通过命令关闭保护模式：CONFIG SET protected-mode no</li>
+<li>重启服务，启动时加上参数：–protected-mode no</li>
+<li>绑定ip或设置pass</li>
+</ol>
+<p>采取其中一种即可。<br>ok后，查看sentinel状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 63791</div><div class="line">10.14.137.85:63791&gt; info sentinel</div><div class="line"><span class="comment"># Sentinel</span></div><div class="line">sentinel_masters:1</div><div class="line">sentinel_tilt:0</div><div class="line">sentinel_running_scripts:0</div><div class="line">sentinel_scripts_queue_length:0</div><div class="line">sentinel_simulate_failure_flags:0</div><div class="line">master0:name=master-1,status=ok,address=10.14.137.85:6379,slaves=2,sentinels=2</div><div class="line">10.14.137.85:63791&gt;</div></pre></td></tr></table></figure></p>
+<p>接下来验证redis sentinel的主从切换：</p>
+<p>首先关闭主redis（6379）服务（shutdown）。<br>查看哨兵，发现端口号为6380的从服务变成了主服务,sentinel自动完成了故障切换。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ <span class="built_in">kill</span> -9 31013</div><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 63791</div><div class="line">10.14.137.85:63791&gt; info sentinel</div><div class="line"><span class="comment"># Sentinel</span></div><div class="line">sentinel_masters:1</div><div class="line">sentinel_tilt:0</div><div class="line">sentinel_running_scripts:0</div><div class="line">sentinel_scripts_queue_length:0</div><div class="line">sentinel_simulate_failure_flags:0</div><div class="line">master0:name=master-1,status=ok,address=10.14.137.85:6380,slaves=2,sentinels=2</div><div class="line">10.14.137.85:63791&gt;</div></pre></td></tr></table></figure></p>
+<p>可以看到哨兵所监听的master address变成了address=10.14.137.85:6380</p>
+<p>启动刚才被shutdown的6379服务并查看，发现它变成了从服务。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 6380</div><div class="line">10.14.137.85:6380&gt; info replication</div><div class="line">NOAUTH Authentication required.</div><div class="line">10.14.137.85:6380&gt; auth fish@123</div><div class="line">OK</div><div class="line">10.14.137.85:6380&gt; info replication</div><div class="line"><span class="comment"># Replication</span></div><div class="line">role:master</div><div class="line">connected_slaves:1</div><div class="line">slave0:ip=10.14.137.85,port=6381,state=online,offset=22085,lag=0</div><div class="line">master_repl_offset:22085</div><div class="line">repl_backlog_active:1</div><div class="line">repl_backlog_size:1048576</div><div class="line">repl_backlog_first_byte_offset:2</div><div class="line">repl_backlog_histlen:22084</div><div class="line">10.14.137.85:6380&gt;</div></pre></td></tr></table></figure>
+<p>可见，之前的slave变成了master<br>重新启动之前的master：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-server conf/redis-master-6379.conf fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 6379 <span class="_">-a</span> fish@123</div><div class="line">10.14.137.85:6379&gt; info replication</div><div class="line"><span class="comment"># Replication</span></div><div class="line">role:slave</div><div class="line">master_host:10.14.137.85</div><div class="line">master_port:6380</div><div class="line">master_link_status:up</div><div class="line">master_last_io_seconds_ago:1</div><div class="line">master_sync_in_progress:0</div><div class="line">slave_repl_offset:46407</div><div class="line">slave_priority:100</div><div class="line">slave_read_only:1</div><div class="line">connected_slaves:0</div><div class="line">master_repl_offset:0</div><div class="line">repl_backlog_active:0</div><div class="line">repl_backlog_size:1048576</div><div class="line">repl_backlog_first_byte_offset:0</div><div class="line">repl_backlog_histlen:0</div><div class="line">10.14.137.85:6379&gt;</div></pre></td></tr></table></figure></p>
+<p>发现之前的master下线重启之后role变为了slave。</p>
+<h2 id="四、Jedis-Sentinel教程"><a href="#四、Jedis-Sentinel教程" class="headerlink" title="四、Jedis Sentinel教程"></a>四、Jedis Sentinel教程</h2><p>Maven依赖：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>redis.clients<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jedis<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.8.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="comment">&lt;!-- spring-redis --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.data<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-data-redis<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.6.4.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>redis的配置文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#redis config</span></div><div class="line">redis.pass=yingjun</div><div class="line">redis.pool.maxTotal=105</div><div class="line">redis.pool.maxIdle=10</div><div class="line">redis.pool.maxWaitMillis=60000</div><div class="line">redis.pool.testOnBorrow=<span class="literal">true</span></div><div class="line"></div><div class="line">sentinel1.ip=192.168.78.99</div><div class="line">sentinel1.port=63791</div><div class="line"></div><div class="line">sentinel2.ip=192.168.78.99</div><div class="line">sentinel2.port=63792</div></pre></td></tr></table></figure></p>
+<p>Spring的配置文件：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div></pre></td><td class="code"><pre><div class="line"><span class="comment">&lt;!-- Redis 配置 --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"jedisPoolConfig"</span> <span class="attr">class</span>=<span class="string">"redis.clients.jedis.JedisPoolConfig"</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"maxTotal"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pool.maxTotal&#125;"</span> /&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"maxIdle"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pool.maxIdle&#125;"</span> /&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"maxWaitMillis"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pool.maxWaitMillis&#125;"</span> /&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"testOnBorrow"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pool.testOnBorrow&#125;"</span> /&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"sentinelConfiguration"</span></span></div><div class="line">    <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.RedisSentinelConfiguration"</span>&gt;</div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"master"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.RedisNode"</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"name"</span> <span class="attr">value</span>=<span class="string">"master-1"</span>&gt;</span><span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"sentinels"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">set</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.RedisNode"</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"host"</span> <span class="attr">value</span>=<span class="string">"$&#123;sentinel1.ip&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"port"</span> <span class="attr">value</span>=<span class="string">"$&#123;sentinel1.port&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line">            <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.RedisNode"</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"host"</span> <span class="attr">value</span>=<span class="string">"$&#123;sentinel2.ip&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"port"</span> <span class="attr">value</span>=<span class="string">"$&#123;sentinel2.port&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line">            <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">set</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line"></div><div class="line"><span class="comment">&lt;!-- Jedis ConnectionFactory连接配置 --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"jedisConnectionFactory"</span></span></div><div class="line">    <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.jedis.JedisConnectionFactory"</span>&gt;</div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"password"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pass&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"poolConfig"</span> &gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">ref</span> <span class="attr">bean</span>=<span class="string">"jedisPoolConfig"</span>/&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"sentinelConfig"</span> <span class="attr">ref</span>=<span class="string">"sentinelConfiguration"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line"></div><div class="line"><span class="comment">&lt;!-- redisTemplate配置，redisTemplate是对Jedis的对redis操作的扩展，有更多的操作，封装使操作更便捷 --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"redisTemplate"</span> <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.core.StringRedisTemplate"</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"connectionFactory"</span> <span class="attr">ref</span>=<span class="string">"jedisConnectionFactory"</span> /&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>代码中直接用redisTemplate调用：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="meta">@Override</span></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">add</span><span class="params">(<span class="keyword">final</span> KeyToken tkey)</span> </span>&#123;</div><div class="line">    <span class="keyword">boolean</span> result = redisTemplate.execute(<span class="keyword">new</span> RedisCallback&lt;Boolean&gt;() &#123;</div><div class="line"></div><div class="line">        <span class="meta">@Override</span></div><div class="line">        <span class="function"><span class="keyword">public</span> Boolean <span class="title">doInRedis</span><span class="params">(RedisConnection connection)</span> <span class="keyword">throws</span> DataAccessException </span>&#123;</div><div class="line">            RedisSerializer&lt;String&gt; serializer = getRedisSerializer();</div><div class="line">            <span class="keyword">byte</span>[] key = serializer.serialize(tkey.getIndex());</div><div class="line">            <span class="keyword">byte</span>[] name = serializer.serialize(tkey.getExpire_time());</div><div class="line">            <span class="keyword">return</span> connection.setNX(key, name);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">    &#125;);</div><div class="line">    <span class="keyword">return</span> result;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2017/03/23/redis-sentinel原理/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          redis sentinel原理
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2017/03/21/hexo添加打赏功能/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">hexo添加打赏功能</div>
+    </a>
+  
+</nav>
+
+  
+  <br>
+</article>
+
+
+
+
+</div>
+<div class="col-md-3 col-sm-3 blog-sidebar">
+  <!-- CATEGORIES START -->
+<h2 class="no-top-space">Categories</h2>
+
+<div class="widget-wrap">
+  <div class="widget">
+    <ul class="nav sidebar-categories margin-bottom-40">
+      
+	<li>
+	  <a href="/categories/Hexo/">Hexo (2)</a>
+	</li>
+      
+	<li>
+	  <a href="/categories/NET/">.NET (1)</a>
+	</li>
+      
+	<li>
+	  <a href="/categories/Dynamics-NAV/">Dynamics NAV (2)</a>
+	</li>
+      
+	<li>
+	  <a href="/categories/NGINX/">NGINX (1)</a>
+	</li>
+      
+	<li>
+	  <a href="/categories/Humor/">Humor (1)</a>
+	</li>
+      
+	<li>
+	  <a href="/categories/杂谈/">杂谈 (1)</a>
+	</li>
+      
+	<li>
+	  <a href="/categories/redis/">redis (2)</a>
+	</li>
+      
+    </ul>
+  </div>
+</div>
+
+
+<!-- CATEGORIES END -->
+
+<!-- BEGIN BLOG TAGS -->
+<div class="blog-tags margin-bottom-20">
+  <h2>Tags</h2>
+  
+  <div class="widget-wrap">
+    <div class="widget">
+      
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/C/"><i class='fa fa-tags'></i>C#</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design/"><i class='fa fa-tags'></i>Design</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/How-To/"><i class='fa fa-tags'></i>How-To</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NAV/"><i class='fa fa-tags'></i>NAV</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Programming/"><i class='fa fa-tags'></i>Programming</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Resources/"><i class='fa fa-tags'></i>Resources</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Visual-Studio/"><i class='fa fa-tags'></i>Visual Studio</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Development/"><i class='fa fa-tags'></i>Web Development</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Welcome/"><i class='fa fa-tags'></i>Welcome</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/employment/"><i class='fa fa-tags'></i>employment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/funny/"><i class='fa fa-tags'></i>funny</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/"><i class='fa fa-tags'></i>hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/"><i class='fa fa-tags'></i>redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sentinel/"><i class='fa fa-tags'></i>sentinel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sentinel原理/"><i class='fa fa-tags'></i>sentinel原理</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spring-data-redis/"><i class='fa fa-tags'></i>spring-data-redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/打赏/"><i class='fa fa-tags'></i>打赏</a></li></ul>
+    </div>
+  </div>
+
+
+</div>
+<!-- END BLOG TAGS -->
+
+
+<!-- BEGIN FEATURED POSTS -->                            
+<h2>Featured Posts</h2>
+<div class="recent-news margin-bottom-10">
+  
+    
+      <div class="row margin-bottom-10">
+	<div class="col-md-4">
+	  <img src="https://s3.amazonaws.com/ptsteadman-images/helloworld.jpg" class="img-responsive ">
+	</div>
+	<div class="col-md-8">
+	  <h3><a href="http://yoursite.com/2014/02/23/2014-02-23-hello-world/">Welcome To Hexo</a></h3>
+	</div>                        
+      </div>
+    
+  
+    
+      <div class="row margin-bottom-10">
+	<div class="col-md-4">
+	  <img src="https://s3.amazonaws.com/ptsteadman-images/vs.jpg" class="img-responsive ">
+	</div>
+	<div class="col-md-8">
+	  <h3><a href="http://yoursite.com/2015/03/23/2015-03-23-Make-VS-Insert-Spaces/">Spaces for Newline Indents in VS</a></h3>
+	</div>                        
+      </div>
+    
+  
+    
+  
+    
+      <div class="row margin-bottom-10">
+	<div class="col-md-4">
+	  <img src="https://s3.amazonaws.com/ptsteadman-images/nginx-proxy.png" class="img-responsive ">
+	</div>
+	<div class="col-md-8">
+	  <h3><a href="http://yoursite.com/2015/04/01/2015-04-01-NGINX-Static-Locations/">Static NGINX Locations</a></h3>
+	</div>                        
+      </div>
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+</div>
+<!-- END FEATURED POSTS -->                            
+
+</div>
+</div>
+
+  </section>
+</div>
+
+  
+<!-- BEGIN FOOTER -->
+<div class="footer">
+  <div class="container">
+	<div class="row">
+	  <!-- BEGIN COPYRIGHT -->
+	  <div class="col-md-6 col-sm-6 padding-top-10">
+			  &copy; 2017 Hexo<br>
+<a href="javascript:;">Privacy Policy</a> | <a href="javascript:;">Terms of Service</a>
+	  </div>
+	  <!-- END COPYRIGHT -->
+  <!-- BEGIN SOCIAL -->
+<div class="col-md-6 col-sm-6">
+  <ul class="social-footer list-unstyled list-inline pull-right">
+    
+      <li><a href="https://github.com/ptsteadman"><i class="fa fa-github"></i></a></li>
+    
+      <li><a href="https://twitter.com/ptsteadman"><i class="fa fa-twitter"></i></a></li>
+    
+      <li><a href="https://www.facebook.com/ptsteadman"><i class="fa fa-facebook"></i></a></li>
+    
+      <li><a href="/atom.xml"><i class="fa fa-rss"></i></a></li>
+    
+      <li><a href="https://linkedin.com/in/ptsteadman"><i class="fa fa-linkedin"></i></a></li>
+    
+      <li><a href="http://stackoverflow.com/users/2480493/patrick-steadman"><i class="fa fa-stackoverflow"></i></a></li>
+    
+  </ul>  
+</div>
+<!-- END SOCIAL -->
+
+	</div>
+  </div>
+</div>
+<!-- END FOOTER -->
+
+  <!-- BEGIN CORE PLUGINS (REQUIRED FOR ALL PAGES) -->
+<!--[if lt IE 9]>
+<script src="/metronic/assets/plugins/respond.min.js"></script>
+<![endif]--> 
+<script src="/metronic/assets/plugins/jquery.min.js"></script>
+<script src="/metronic/assets/plugins/jquery-migrate.min.js"></script>
+<script src="/metronic/assets/plugins/bootstrap/js/bootstrap.min.js"></script>
+<script src="/metronic/assets/corporate/scripts/back-to-top.js"></script>
+<script src="/metronic/assets/plugins/owl.carousel/owl.carousel.min.js"></script>
+<script src="/metronic/assets/corporate/scripts/layout.js"></script>
+<script src="/js/wow.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script type="text/javascript">
+    jQuery(document).ready(function() {
+        Layout.init();    
+        Layout.initOWL();
+        Layout.initTwitter();
+        Layout.initFixHeaderWithPreHeader(); /* Switch On Header Fixing (only if you have pre-header) */
+        Layout.initNavScrolling(); 
+	new WOW().init();
+    });
+</script>
+<!-- END CORE PLUGINS -->
+
+<!-- BEGIN PAGE-SPECIFIC PLUGINS --> 
+
+
+
+
+
+
+
+<!-- END PAGE-SPECIFIC PLUGINS --> 
+
+<!-- BEGIN INTEGRATIONS -->
+
+
+
+
+
+<!-- END INTEGRATIONS -->
+
+</body>
+</html>
