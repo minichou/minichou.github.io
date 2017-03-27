@@ -164,6 +164,15 @@ pre .keyword,
 pre .javascript .function {
   color: #c9c;
 }
+html {
+  height: 100%;
+}
+body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
 .content-page {
   margin-right: 0px !important;
 }

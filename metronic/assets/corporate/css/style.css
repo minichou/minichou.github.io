@@ -1685,8 +1685,15 @@ Pre-Footer and pre-footer elements
     color: #fff;
 }
 
+
+
 /* footer */
 .footer {
+	position: absolute;
+	width: 100%;
+	bottom: 0;
+	height:100px;
+	
 	background: #272626;
 	color: #fff;
 	font-size: 12px;
