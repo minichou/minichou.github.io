@@ -14,7 +14,7 @@
 <meta property="og:site_name" content="迷途小码农">
 <meta property="og:description" content="One of the problems I faced in building a non-trivial application that consumedNAV Web Services was figuring out how to “join” fields from different tables.For example, when exposing a list of jobs fr">
 <meta property="og:image" content="https://s3.amazonaws.com/ptsteadman-images/lookup.jpg">
-<meta property="og:updated_time" content="2017-03-24T06:17:27.720Z">
+<meta property="og:updated_time" content="2017-03-27T14:10:28.897Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Adding Lookup Field to a Page in Dynamics NAV">
 <meta name="twitter:description" content="One of the problems I faced in building a non-trivial application that consumedNAV Web Services was figuring out how to “join” fields from different tables.For example, when exposing a list of jobs fr">
@@ -159,7 +159,7 @@
         </div>
         <div class="article-info profile-block">
             <div class="article-info-block">
-                10
+                11
                 <span>文章</span>
             </div>
             <div class="article-info-block">
@@ -247,6 +247,11 @@
         
         <div class="article-entry" itemprop="articleBody">
         
+            
+                <div id="toc" class="toc-article">
+                <strong class="toc-title">文章目录</strong>
+                    
+                </div>
             
             <p>One of the problems I faced in building a non-trivial application that consumed<br>NAV Web Services was figuring out how to “join” fields from different tables.<br>For example, when exposing a list of jobs from a job table which includes a<br>resource needed for the job, you might need more than just the resource id<br>that’s a field in the table: you might also need the resource name and<br>description.  While this is easy to get for one record, what about when you<br>need a few hundred records in a table that has been dynamically filtered?  When<br>exposing a Page as a web service, it’s easy to include the fields of the table<br>that the page is based on, but it’s less clear how to include fields from<br>another table.</p>
 <p>Forum posts like <a href="http://dynamicsuser.net/forums/p/32550/170843.aspx" target="_blank" rel="external">this</a> led me to believe that I couldn’t expose flow fields in a Page web service, and I would get exceptions when I tried to expose all the fields of a table.  In fact, it’s perfectly possible to expose a flow field: it’s <strong>flow filters</strong> that don’t work with web services.  But, I also didn’t want to modify the underlying [job] table to add a flow field, and didn’t see an easy way of adding a flow field to a Page.  I tried “joining” the data in the C# application, but found network overhead made the application unusuably slow.</p>
@@ -417,7 +422,26 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
                     <li>
                         
                         <div class="item-thumbnail">
-                            <a href="/2017/03/23/redis-sentinel原理/" class="thumbnail">
+                            <a href="/2017/03/27/just-a-test/" class="thumbnail">
+    
+    
+        <span class="thumbnail-image thumbnail-none"></span>
+    
+</a>
+
+                        </div>
+                        
+                        <div class="item-inner">
+                            <p class="item-category"></p>
+                            <p class="item-title"><a href="/2017/03/27/just-a-test/" class="title">just a test</a></p>
+                            <p class="item-date"><time datetime="2017-03-27T14:30:00.000Z" itemprop="datePublished">2017-03-27</time></p>
+                        </div>
+                    </li>
+                
+                    <li>
+                        
+                        <div class="item-thumbnail">
+                            <a href="/2017/03/23/Redis Sentinel原理/" class="thumbnail">
     
     
         <span class="thumbnail-image thumbnail-none"></span>
@@ -428,7 +452,7 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
                         
                         <div class="item-inner">
                             <p class="item-category"><a class="article-category-link" href="/categories/redis/">redis</a></p>
-                            <p class="item-title"><a href="/2017/03/23/redis-sentinel原理/" class="title">redis sentinel原理</a></p>
+                            <p class="item-title"><a href="/2017/03/23/Redis Sentinel原理/" class="title">Redis Sentinel原理</a></p>
                             <p class="item-date"><time datetime="2017-03-23T09:49:28.000Z" itemprop="datePublished">2017-03-23</time></p>
                         </div>
                     </li>
@@ -436,7 +460,7 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
                     <li>
                         
                         <div class="item-thumbnail">
-                            <a href="/2017/03/23/redis-sentinel（哨兵模式）高可用集群搭建及spring集成/" class="thumbnail">
+                            <a href="/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/" class="thumbnail">
     
     
         <span class="thumbnail-image thumbnail-none"></span>
@@ -447,7 +471,7 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
                         
                         <div class="item-inner">
                             <p class="item-category"><a class="article-category-link" href="/categories/redis/">redis</a></p>
-                            <p class="item-title"><a href="/2017/03/23/redis-sentinel（哨兵模式）高可用集群搭建及spring集成/" class="title">redis sentinel（哨兵模式）高可用集群搭建及spring集成</a></p>
+                            <p class="item-title"><a href="/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/" class="title">Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成</a></p>
                             <p class="item-date"><time datetime="2017-03-23T09:42:36.000Z" itemprop="datePublished">2017-03-23</time></p>
                         </div>
                     </li>
@@ -490,25 +514,6 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
                         </div>
                     </li>
                 
-                    <li>
-                        
-                        <div class="item-thumbnail">
-                            <a href="/2015/05/02/2015-05-02-How-To-Impress/" class="thumbnail">
-    
-    
-        <span style="background-image:url(https://s3.amazonaws.com/ptsteadman-images/info2.jpg)" alt="How To Impress Employers at Infosessions" class="thumbnail-image"></span>
-    
-</a>
-
-                        </div>
-                        
-                        <div class="item-inner">
-                            <p class="item-category"><a class="article-category-link" href="/categories/Humor/">Humor</a></p>
-                            <p class="item-title"><a href="/2015/05/02/2015-05-02-How-To-Impress/" class="title">How To Impress Employers at Infosessions</a></p>
-                            <p class="item-date"><time datetime="2015-05-01T16:00:00.000Z" itemprop="datePublished">2015-05-02</time></p>
-                        </div>
-                    </li>
-                
             </ul>
         </div>
     </div>
@@ -527,7 +532,7 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
     <div class="widget-wrap">
         <h3 class="widget-title">归档</h3>
         <div class="widget">
-            <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/03/">三月 2017</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">一月 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">五月 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">四月 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">三月 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02/">二月 2014</a><span class="archive-list-count">1</span></li></ul>
+            <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/03/">三月 2017</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">一月 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">五月 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">四月 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">三月 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02/">二月 2014</a><span class="archive-list-count">1</span></li></ul>
         </div>
     </div>
 

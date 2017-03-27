@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://minichou.github.io/"/>
-  <updated>2017-03-23T10:37:23.132Z</updated>
+  <updated>2017-03-27T14:30:00.727Z</updated>
   <id>https://minichou.github.io/</id>
   
   <author>
@@ -16,11 +16,25 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>redis sentinel原理</title>
-    <link href="https://minichou.github.io/2017/03/23/redis-sentinel%E5%8E%9F%E7%90%86/"/>
-    <id>https://minichou.github.io/2017/03/23/redis-sentinel原理/</id>
+    <title>just a test</title>
+    <link href="https://minichou.github.io/2017/03/27/just-a-test/"/>
+    <id>https://minichou.github.io/2017/03/27/just-a-test/</id>
+    <published>2017-03-27T14:30:00.000Z</published>
+    <updated>2017-03-27T14:30:00.727Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Redis Sentinel原理</title>
+    <link href="https://minichou.github.io/2017/03/23/Redis%20Sentinel%E5%8E%9F%E7%90%86/"/>
+    <id>https://minichou.github.io/2017/03/23/Redis Sentinel原理/</id>
     <published>2017-03-23T09:49:28.000Z</published>
-    <updated>2017-03-23T10:37:23.132Z</updated>
+    <updated>2017-03-27T14:26:36.699Z</updated>
     
     <content type="html"><![CDATA[<blockquote>
 <p>本文将主要分析redis sentinel模式中sentinel（哨兵）所起作用</p>
@@ -136,11 +150,11 @@
   </entry>
   
   <entry>
-    <title>redis sentinel（哨兵模式）高可用集群搭建及spring集成</title>
-    <link href="https://minichou.github.io/2017/03/23/redis-sentinel%EF%BC%88%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%EF%BC%89%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8Aspring%E9%9B%86%E6%88%90/"/>
-    <id>https://minichou.github.io/2017/03/23/redis-sentinel（哨兵模式）高可用集群搭建及spring集成/</id>
+    <title>Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成</title>
+    <link href="https://minichou.github.io/2017/03/23/Redis%20Sentinel%EF%BC%88%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%EF%BC%89%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8ASpring%E9%9B%86%E6%88%90/"/>
+    <id>https://minichou.github.io/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/</id>
     <published>2017-03-23T09:42:36.000Z</published>
-    <updated>2017-03-23T09:50:49.045Z</updated>
+    <updated>2017-03-27T14:26:49.401Z</updated>
     
     <content type="html"><![CDATA[<blockquote>
 <p>本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。</p>
@@ -226,7 +240,7 @@
     <link href="https://minichou.github.io/2017/03/21/hexo%E6%B7%BB%E5%8A%A0%E6%89%93%E8%B5%8F%E5%8A%9F%E8%83%BD/"/>
     <id>https://minichou.github.io/2017/03/21/hexo添加打赏功能/</id>
     <published>2017-03-21T09:39:02.000Z</published>
-    <updated>2017-03-21T10:09:41.348Z</updated>
+    <updated>2017-03-27T14:10:47.743Z</updated>
     
     <content type="html"><![CDATA[<p>本文将介绍如何在hexo中添加打赏功能</p>
 <h2 id="第一步：创建打赏html代码文件"><a href="#第一步：创建打赏html代码文件" class="headerlink" title="第一步：创建打赏html代码文件"></a>第一步：创建打赏html代码文件</h2><p>首先咱们在主题下layout文件里，创建一个名叫：donate.ejs的文件<br>在里面输入:<br><a id="more"></a><br><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="comment">&lt;!-- 添加捐赠图标 --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"post-donate"</span> <span class="attr">style</span>=<span class="string">"margin-bottom: 30px;margin-top: 10px;"</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"donate_board"</span> <span class="attr">class</span>=<span class="string">"donate_bar center"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">a</span> <span class="attr">id</span>=<span class="string">"btn_donate"</span> <span class="attr">class</span>=<span class="string">"btn_donate"</span> <span class="attr">href</span>=<span class="string">"javascript:;"</span> <span class="attr">title</span>=<span class="string">"donate"</span>&gt;</span><span class="tag">&lt;/<span class="name">a</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">span</span> <span class="attr">class</span>=<span class="string">"donate_txt"</span>&gt;</span></div><div class="line">           <span class="tag">&lt;<span class="name">%=theme.donate_message%</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">span</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">br</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"donate_guide"</span> <span class="attr">class</span>=<span class="string">"donate_bar donate_bar2 center hidden"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"/css/images/alipay.jpg"</span> <span class="attr">id</span>=<span class="string">"weixin"</span> <span class="attr">title</span>=<span class="string">"alipay doante"</span> <span class="attr">alt</span>=<span class="string">"alipay doante"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"/css/images/wechatpay.jpg"</span> <span class="attr">title</span>=<span class="string">"wechatpay donate"</span> <span class="attr">id</span>=<span class="string">"zhifubao"</span> <span class="attr">alt</span>=<span class="string">"echatpay donate"</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">type</span>=<span class="string">"text/javascript"</span>&gt;</span><span class="undefined"></span></div><div class="line">        $('#weixin').hover()</div><div class="line">        document.getElementById('btn_donate').onclick = function () &#123;</div><div class="line">            $('#donate_board').addClass('hidden');</div><div class="line">            $('#donate_guide').removeClass('hidden');</div><div class="line">        &#125;</div><div class="line"></div><div class="line">    <span class="tag">&lt;/<span class="name">script</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></div></pre></td></tr></table></figure></p>
@@ -260,7 +274,7 @@
     <link href="https://minichou.github.io/2016/01/02/2016-01-02-Notes-On-Creating-A-Hexo-Theme/"/>
     <id>https://minichou.github.io/2016/01/02/2016-01-02-Notes-On-Creating-A-Hexo-Theme/</id>
     <published>2016-01-01T16:00:00.000Z</published>
-    <updated>2017-03-24T06:17:27.725Z</updated>
+    <updated>2017-03-27T14:12:06.941Z</updated>
     
     <content type="html"><![CDATA[<div class="image-strip"><br><img src="https://s3.amazonaws.com/ptsteadman-images/hexo.png"><br></div>
 
@@ -302,7 +316,7 @@ partial(&#39;_partials/tag.ejs&#39;) %&gt;</code>.  Problem solved.</p>
     <link href="https://minichou.github.io/2015/05/02/2015-05-02-How-To-Impress/"/>
     <id>https://minichou.github.io/2015/05/02/2015-05-02-How-To-Impress/</id>
     <published>2015-05-01T16:00:00.000Z</published>
-    <updated>2017-03-24T06:17:27.723Z</updated>
+    <updated>2017-03-27T14:12:00.101Z</updated>
     
     <content type="html"><![CDATA[<p>Top tech talent knows that industry recruiters often bring a stack of<br>pre-negotiated offers to university infosessions, so that they can snag<br>programmers and UX designers who really stand out.  Instead of spending valuable<br>time validating a particularly promising candidate’s skillset through a<br>protracted series of interviews, it’s often more efficient to simply <strong>give the<br>individual an offer right then and there</strong>.  Internal studies at Google have shown<br>that experienced recruiters can usually tell if a programmer has ‘what it takes’<br>just from how they act at infosessions: the insightful questions they ask, the<br>stickers on their laptop, and how they comport themselves in general.</p>
 <a id="more"></a>
@@ -343,7 +357,7 @@ partial(&#39;_partials/tag.ejs&#39;) %&gt;</code>.  Problem solved.</p>
     <link href="https://minichou.github.io/2015/04/08/2015-04-08-NAV-Programming-Resources/"/>
     <id>https://minichou.github.io/2015/04/08/2015-04-08-NAV-Programming-Resources/</id>
     <published>2015-04-07T16:00:00.000Z</published>
-    <updated>2017-03-24T06:17:27.722Z</updated>
+    <updated>2017-03-27T14:10:38.634Z</updated>
     
     <content type="html"><![CDATA[<p>Here are some of the resources I found helpful for learning to develop Dynamics NAV web service based applications.</p>
 <h4 id="C-AL-Programming"><a href="#C-AL-Programming" class="headerlink" title="C/AL Programming:"></a>C/AL Programming:</h4><p><a href="http://www.consultec.es/DocTutoriales/Introduction_to_CAL_Programming.pdf" target="_blank" rel="external">Introduction to CAL Programming</a><br>This provides a good overview of the basics of CAL programming, which can become necessary in building a web service applications when a custom codeunit or page extension is required.</p>
@@ -375,7 +389,7 @@ partial(&#39;_partials/tag.ejs&#39;) %&gt;</code>.  Problem solved.</p>
     <link href="https://minichou.github.io/2015/04/05/2015-04-05-Lookup-on-Page/"/>
     <id>https://minichou.github.io/2015/04/05/2015-04-05-Lookup-on-Page/</id>
     <published>2015-04-04T16:00:00.000Z</published>
-    <updated>2017-03-24T06:17:27.720Z</updated>
+    <updated>2017-03-27T14:10:28.897Z</updated>
     
     <content type="html"><![CDATA[<p>One of the problems I faced in building a non-trivial application that consumed<br>NAV Web Services was figuring out how to “join” fields from different tables.<br>For example, when exposing a list of jobs from a job table which includes a<br>resource needed for the job, you might need more than just the resource id<br>that’s a field in the table: you might also need the resource name and<br>description.  While this is easy to get for one record, what about when you<br>need a few hundred records in a table that has been dynamically filtered?  When<br>exposing a Page as a web service, it’s easy to include the fields of the table<br>that the page is based on, but it’s less clear how to include fields from<br>another table.</p>
 <p>Forum posts like <a href="http://dynamicsuser.net/forums/p/32550/170843.aspx" target="_blank" rel="external">this</a> led me to believe that I couldn’t expose flow fields in a Page web service, and I would get exceptions when I tried to expose all the fields of a table.  In fact, it’s perfectly possible to expose a flow field: it’s <strong>flow filters</strong> that don’t work with web services.  But, I also didn’t want to modify the underlying [job] table to add a flow field, and didn’t see an easy way of adding a flow field to a Page.  I tried “joining” the data in the C# application, but found network overhead made the application unusuably slow.</p>
@@ -406,7 +420,7 @@ partial(&#39;_partials/tag.ejs&#39;) %&gt;</code>.  Problem solved.</p>
     <link href="https://minichou.github.io/2015/04/01/2015-04-01-NGINX-Static-Locations/"/>
     <id>https://minichou.github.io/2015/04/01/2015-04-01-NGINX-Static-Locations/</id>
     <published>2015-03-31T16:00:00.000Z</published>
-    <updated>2017-03-24T06:17:27.718Z</updated>
+    <updated>2017-03-27T14:10:17.769Z</updated>
     
     <content type="html"><![CDATA[<p>I try to get a lot of mileage out of the single AWS t2.micro instance I keep running,<br>which means I have many different projects running on different paths on a single server.  Everytime I finish a project, I have to relearn how to add new “locations” (paths) to the NGINX virtual host.</p>
 <p>I was really frustrated when I couldn’t figure out how to add a static location for the Jekyll<br>website I created for the game I’m developing.  I kept trying to do something like this:</p>
@@ -445,7 +459,7 @@ location /array {
     <link href="https://minichou.github.io/2015/03/23/2015-03-23-Make-VS-Insert-Spaces/"/>
     <id>https://minichou.github.io/2015/03/23/2015-03-23-Make-VS-Insert-Spaces/</id>
     <published>2015-03-22T16:00:00.000Z</published>
-    <updated>2017-03-24T06:17:27.716Z</updated>
+    <updated>2017-03-27T14:10:00.311Z</updated>
     
     <content type="html"><![CDATA[<p>It’s really annoying when Visual Studio shows you this:</p>
 <img src="http://ptsteadman.github.io/images/vs1.png">
@@ -482,7 +496,7 @@ location /array {
     <link href="https://minichou.github.io/2014/02/23/2014-02-23-hello-world/"/>
     <id>https://minichou.github.io/2014/02/23/2014-02-23-hello-world/</id>
     <published>2014-02-22T16:00:00.000Z</published>
-    <updated>2017-03-24T06:17:27.714Z</updated>
+    <updated>2017-03-27T14:10:10.408Z</updated>
     
     <content type="html"><![CDATA[<p>Welcome to <a href="http://hexo.io/" target="_blank" rel="external">Hexo</a>! This is your very first post. Check <a href="http://hexo.io/docs/" target="_blank" rel="external">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="http://hexo.io/docs/troubleshooting.html" target="_blank" rel="external">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="external">GitHub</a>.</p>
 <h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo new <span class="string">"My New Post"</span></div></pre></td></tr></table></figure>
