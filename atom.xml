@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>迷途小码农</title>
+  <subtitle>尘世间迷途小码农一枚</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="https://minichou.github.io/"/>
+  <updated>2017-03-23T10:37:23.132Z</updated>
+  <id>https://minichou.github.io/</id>
+  
+  <author>
+    <name>Mini Chou</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>redis sentinel原理</title>
+    <link href="https://minichou.github.io/2017/03/23/redis-sentinel%E5%8E%9F%E7%90%86/"/>
+    <id>https://minichou.github.io/2017/03/23/redis-sentinel原理/</id>
+    <published>2017-03-23T09:49:28.000Z</published>
+    <updated>2017-03-23T10:37:23.132Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote>
+<p>本文将主要分析redis sentinel模式中sentinel（哨兵）所起作用</p>
+</blockquote>
+<h3 id="Sentinel主要功能"><a href="#Sentinel主要功能" class="headerlink" title="Sentinel主要功能"></a>Sentinel主要功能</h3><p>sentinel主要功能是在主库（master）出现问题后，实现：<strong>master存活检测、主从运行情况检测、自动failover、主从切换等高可用</strong>。redis的sentinel最小配置是一主一从，实现故障转移高可用。</p>
+<a id="more"></a>
+<p>基本原理：<strong>投票算法+心跳机制</strong></p>
+<p>在哨兵的运行阶段，其会向其他的哨兵、master和slave发送消息确认其是否存活，如果在指定的时间内未收到正常回应，暂时认为对法挂起了（被标记为主观宕机–SDOWN）<br>当多个哨兵都报告同一个master没有响应了，通过投票算法，系统判断其已死亡（被标记为客观宕机–ODOWN）。在已知的slave节点中，根据实际情况和优先级从该下线的master所属slave中选出一个slave提升为新的master，其他的slave都指向这个新的master，继续维护主从关系。 </p>
+<p>redis的sentinel系统可以用来管理多个redis服务器，该系统可以执行以下三个任务： </p>
+<ul>
+<li>监控：sentinel会不断的检查你的主服务器和从服务器是否正常运行。 </li>
+<li>提醒：当被监控的某个redis服务器出现问题，sentinel通过API向管理员或者其他的应用程序发送通知。<br>自动故障转移：当主服务器不能正常工作时，sentinel会开始一次自动的故障转移操作，它会将与失效主服务器是主从关系的其中一个从库升级为新的主服务器，并且修改其他的的slave，重定向到新的slave。</li>
+</ul>
+<p>redis的sentinel是一个分布式系统，可以在一个架构下运行多个sentinel进程，这些进程之间通过流言协议（gossip protocols)来接收关于主服务器是否下线的信息， 并使用投票协议（agreement protocols）来决定是否执行自动故障迁移， 以及选择哪个从slave服务器作为新的主服务器。</p>
+<h3 id="关于redis-sentinel的主观下线和客观下线"><a href="#关于redis-sentinel的主观下线和客观下线" class="headerlink" title="关于redis sentinel的主观下线和客观下线"></a>关于redis sentinel的主观下线和客观下线</h3><p>redis sentinel关于被监控的redis实例出现不响应的判断，内部有两种不同的概念：<strong>主观下线和客观下线</strong></p>
+<p>主观下线：当只有单个sentinel实例对redis实例做出无响应的判断，此时进入主观判断，不会触发自动故障转移等操作。<br>注意，一个服务器必须在 master-down-after-milliseconds 毫秒内， 一直返回无效回复才会被 Sentinel 标记为主观下线。 </p>
+<p>客观下线：多个 Sentinel 实例在对同一个服务器做出 SDOWN 判断， 并且通过 SENTINEL is-master-down-by-addr 命令互相交流之后， 得出的服务器下线判断。 （一个 Sentinel 可以通过向另一个 Sentinel 发送 SENTINEL is-master-down-by-addr 命令来询问对方是否认为给定的服务器已下线） </p>
+<p>从主观下线状态切换到客观下线状态并没有使用严格的法定人数算法（strong quorum algorithm）， 而是使用了流言协议： 如果 Sentinel 在给定的时间范围内， 从其他 Sentinel 那里接收到了足够数量的主服务器下线报告， 那么 Sentinel 就会将主服务器的状态从主观下线改变为客观下线。 如果之后其他 Sentinel 不再报告主服务器已下线， 那么客观下线状态就会被移除。</p>
+<p>客观下线条件只适用于主服务器： 对于任何其他类型的 Redis 实例， Sentinel 在将它们判断为下线前不需要进行协商， 所以从服务器或者其他 Sentinel 永远不会达到客观下线条件。<br>只要一个 Sentinel 发现某个主服务器进入了客观下线状态， 这个 Sentinel 就可能会被其他 Sentinel 推选出， 并对失效的主服务器执行自动故障迁移操作。</p>
+<h3 id="Sentinel定时执行的操作"><a href="#Sentinel定时执行的操作" class="headerlink" title="Sentinel定时执行的操作"></a>Sentinel定时执行的操作</h3><ol>
+<li>每个 Sentinel 以每秒钟一次的频率向它所知的主服务器、从服务器以及其他 Sentinel 实例发送一个 PING 命令。<br>如果一个实例（instance）距离最后一次有效回复 PING 命令的时间超过 down-after-milliseconds 选项所指定的值， 那么这个实例会被 Sentinel 标记为主观下线。 一个有效回复可以是： +PONG 、 -LOADING 或者 -MASTERDOWN 。 </li>
+<li>如果一个主服务器被标记为主观下线， 那么正在监视这个主服务器的所有 Sentinel 要以每秒一次的频率确认主服务器的确进入了主观下线状态。 </li>
+<li>如果一个主服务器被标记为主观下线， 并且有足够数量的 Sentinel （至少要达到配置文件指定的数量）在指定的时间范围内同意这一判断， 那么这个主服务器被标记为客观下线。 </li>
+<li>在一般情况下， 每个 Sentinel 会以每 10 秒一次的频率向它已知的所有主服务器和从服务器发送 INFO 命令。 当一个主服务器被 Sentinel 标记为客观下线时， Sentinel 向下线主服务器的所有从服务器发送 INFO 命令的频率会从 10 秒一次改为每秒一次。 </li>
+<li>当没有足够数量的 Sentinel 同意主服务器已经下线， 主服务器的客观下线状态就会被移除。 当主服务器重新向 Sentinel 的 PING 命令返回有效回复时， 主服务器的主管下线状态就会被移除。</li>
+</ol>
+<h3 id="自动发现哨兵（sentinel）和从服务器"><a href="#自动发现哨兵（sentinel）和从服务器" class="headerlink" title="自动发现哨兵（sentinel）和从服务器"></a>自动发现哨兵（sentinel）和从服务器</h3><p>sentinel与sentinel之间可以进行信息交换和检测对方的可用性。 </p>
+<ol>
+<li>无需为运行的每个sentinel分别设置其他的sentinel地址，因为sentinel可以通过redis内部的发布\订阅功能来自动的发现正在监视相同主机服务器的其他sentinel，这个功能是通过 sentinel:hello发送消息来实现的。 </li>
+<li>不必列出所有slave的信息，因为sentinel可以通过询问主服务器获取从服务器信息。</li>
+</ol>
+<p>每个 Sentinel 会以每两秒一次的频率， 通过发布与订阅功能， 向被它监视的所有主服务器和从服务器的 sentinel:hello 频道发送一条信息， 信息中包含了 Sentinel 的 IP 地址、端口号和运行 ID （runid）。 </p>
+<p>每个 Sentinel 都订阅了被它监视的所有主服务器和从服务器的 sentinel:hello 频道， 查找之前未出现过的 sentinel （looking for unknown sentinels）。 </p>
+<p>当一个 Sentinel 发现一个新的 Sentinel 时， 它会将新的 Sentinel 添加到一个列表中， 这个列表保存了 Sentinel 已知的， 监视同一个主服务器的所有其他 Sentinel 。 </p>
+<p>Sentinel 发送的信息中还包括完整的主服务器当前配置（configuration）。 如果一个 Sentinel 包含的主服务器配置比另一个 Sentinel 发送的配置要旧， 那么这个 Sentinel 会立即升级到新配置上。</p>
+<p>在将一个新 Sentinel 添加到监视主服务器的列表上面之前， Sentinel 会先检查列表中是否已经包含了和要添加的 Sentinel 拥有相同运行 ID 或者相同地址（包括 IP 地址和端口号）的 Sentinel ， 如果是的话， Sentinel 会先移除列表中已有的那些拥有相同运行 ID 或者相同地址的 Sentinel ， 然后再添加新 Sentinel</p>
+<h3 id="Sentinel执行failover流程"><a href="#Sentinel执行failover流程" class="headerlink" title="Sentinel执行failover流程"></a>Sentinel执行failover流程</h3><ol>
+<li>sentinel发现master下线，修改其状态为sdown；</li>
+<li>sentinel和其他sentinel确认master是否down掉，确认其状态为odown；</li>
+<li>对我们的当前纪元进行自增（详情请参考 Raft leader election ）， 并尝试在这个纪元中当选(即首先发现master down掉的sentinel有优先权当选为leader)；</li>
+<li>如果当选失败，那么在设定的故障迁移超时时间的两倍之后，重新尝试当选。如果当选成功，那么执行以下步骤；</li>
+<li>选出一个从服务器，并将它升级为主服务器；</li>
+<li>leader选出一个slave作为master，发送slaveof no one命令；</li>
+<li>通过发布与订阅功能，将更新后的配置传播给所有其他 Sentinel，其他 Sentinel 对它们自己的配置进行更新；</li>
+<li>并通过给其他slave发送slaveof master命令告知其他slave新的master；</li>
+<li>当所有从服务器都已经开始复制新的主服务器时，领头Sentinel终止这次故障迁移操作。</li>
+</ol>
+<h3 id="Sentinel发出投票通知"><a href="#Sentinel发出投票通知" class="headerlink" title="Sentinel发出投票通知"></a>Sentinel发出投票通知</h3><p>发现一个master down掉的sentinel发出投票请求的时候，接收者依据epoch进行判断后并返回它认为的leader后，发现者对接收者的意见照单全收，并没有进行“反驳”。换句话说，接收者接收所有的接收者的意见后，并没有进行一番比较，就接收了每个接收者的认为的leader，结果其leader就是最后一个接收者认为的leader。</p>
+<p>但是从另一方面说，每个接收者都会收到所有潜在的leader的选举邀请，他们会对所有这些候选者进行比较一番后，本地的leader肯定是最后比较的结果，这个结果会通过反馈给每个候选者的通知，使他们知道最终的胜出者，所以还是能选举出最后的leader。</p>
+<h3 id="Sentinel领头羊选举"><a href="#Sentinel领头羊选举" class="headerlink" title="Sentinel领头羊选举"></a>Sentinel领头羊选举</h3><p>Sentinel 自动故障迁移使用 Raft 算法来选举领头（leader） Sentinel ， 从而确保在一个给定的纪元（epoch）里， 只有一个领头产生。</p>
+<p>这表示在同一个纪元中， 不会有两个 Sentinel 同时被选中为领头， 并且各个 Sentinel 在同一个纪元中只会对一个领头进行投票。</p>
+<p>更高的配置纪元总是优于较低的纪元， 因此每个 Sentinel 都会主动使用更新的纪元来代替自己的配置。</p>
+<p>简单来说， 我们可以将 Sentinel 配置看作是一个带有版本号的状态。 一个状态会以最后写入者胜出（last-write-wins）的方式（也即是，最新的配置总是胜出）传播至所有其他 Sentinel 。</p>
+<p>举个例子， 当出现网络分割（network partitions）时， 一个 Sentinel 可能会包含了较旧的配置， 而当这个 Sentinel 接到其他 Sentinel 发来的版本更新的配置时， Sentinel 就会对自己的配置进行更新。</p>
+<p>如果要在网络分割出现的情况下仍然保持一致性， 那么应该使用 min-slaves-to-write 选项， 让主服务器在连接的从实例少于给定数量时停止执行写操作， 与此同时， 应该在每个运行 Redis 主服务器或从服务器的机器上运行 Redis Sentinel 进程。</p>
+<h3 id="Sentinel主master选举"><a href="#Sentinel主master选举" class="headerlink" title="Sentinel主master选举"></a>Sentinel主master选举</h3><p>Sentinel 使用以下规则来选择新的主服务器：</p>
+<ul>
+<li>在失效主服务器属下的从服务器当中， 那些被标记为主观下线、已断线、或者最后一次回复 PING 命令的时间大于五秒钟的从服务器都会被淘汰。</li>
+<li>在失效主服务器属下的从服务器当中， 那些与失效主服务器连接断开的时长超过 down-after 选项指定的时长十倍的从服务器都会被淘汰。</li>
+<li>我们选出复制偏移量（replication offset）最大的那个从服务器作为新的主服务器； 如果复制偏移量不可用， 或者从服务器的复制偏移量相同， 那么带有最小运行 ID 的那个从服务器成为新的主服务器。</li>
+</ul>
+<h3 id="Sentinel与redis实例之间的通信"><a href="#Sentinel与redis实例之间的通信" class="headerlink" title="Sentinel与redis实例之间的通信"></a>Sentinel与redis实例之间的通信</h3><p>以下是sentinel节点所接受的命令：</p>
+<ul>
+<li>PING ：返回 PONG 。 </li>
+<li>SENTINEL masters ：列出所有被监视的主服务器，以及这些主服务器的当前状态。 </li>
+<li>SENTINEL slaves ：列出给定主服务器的所有从服务器，以及这些从服务器的当前状态。 </li>
+<li>SENTINEL get-master-addr-by-name ： 返回给定名字的主服务器的 IP 地址和端口号。 如果这个主服务器正在执行故障转移操作， 或者针对这个主服务器的故障转移操作已经完成， 那么这个命令返回新的主服务器的 IP 地址和端口号。 </li>
+<li>SENTINEL reset ： 重置所有名字和给定模式 pattern 相匹配的主服务器。 pattern 参数是一个 Glob 风格的模式。 重置操作清除主服务器目前的所有状态， 包括正在执行中的故障转移， 并移除目前已经发现和关联的， 主服务器的所有从服务器和 Sentinel 。 </li>
+<li>SENTINEL failover ： 当主服务器失效时， 在不询问其他 Sentinel 意见的情况下， 强制开始一次自动故障迁移 （不过发起故障转移的 Sentinel 会向其他 Sentinel 发送一个新的配置，其他 Sentinel 会根据这个配置进行相应的更新）。</li>
+</ul>
+<p>sentinel连接一个redis实例的时候，会创建cmd和pub/sub两个链接，cmd连接创建成功时候立即发送一个ping命令，pub/sub连接创建成功的时候立即去监听hello channel。<br>通过cmd连接给redis发送命令，通过pub/sub连接得到redis实例上的其他sentinel实例。<br>sentinel与maste/slave的交互主要包括：</p>
+<ol>
+<li>PING:sentinel向其发送PING以了解其状态（是否下线）</li>
+<li>INFO:sentinel向其发送INFO以获取replication相关的信息，通过这个命令可以获取master的slaves</li>
+<li>PUBLISH:sentinel向其监控的master/slave发布本身的信息及master相关的配置</li>
+<li>SUBSCRIBE:sentinel通过订阅master/slave的”sentinel:hello“频道以获取其它正在监控相同服务的sentinels</li>
+</ol>
+<p>sentinel与sentinel的交互主要包括：</p>
+<ol>
+<li>PING:sentinel向slave发送PING以了解其状态（是否下线）</li>
+<li>SENTINEL is-master-down-by-addr：和其他sentinel协商master状态，如果master odown，则投票选出leader做fail over</li>
+</ol>
+<h3 id="Sentinel配置文件参数说明"><a href="#Sentinel配置文件参数说明" class="headerlink" title="Sentinel配置文件参数说明"></a>Sentinel配置文件参数说明</h3><p>部分参数说明：<br>port ：sentinel实例之间通讯的端口</p>
+<p>dir :指定工作目录</p>
+<p>sentinel monitor：sentinel需要监控的主库信息 sentinel monitor<br>其中master-name为自定义master名称，ip为master所在主机的ip地址，redis-port为redis实例的端口号，quorum界定有多少个sentinel实例提交与master通信失败才会判断master为客观宕机（ODOWN），从而发起自动切换。</p>
+<p>sentinel auth-pass：如果master开启的密码验证，在这里配置master的密码 sentinel auth-pass</p>
+<p>sentinel down-after-milliseconds：master被当前sentinel判断为失效的时间间隔，sentinel与master之间的通信没有响应或者代码错误等超过这个时间限定，sentinel会判断master为客观宕机SDOWNdown-after-milliseconds<br>sentinel parallel-syncs：当自动切换完成后，同时进行slaveof到新的master并行执行SYNC的slave个数，默认为1，建议线上保留这个数字，在slave执行slaveof的时候，将不会对客户端请求进行响应，对于读写分离业务会有一定的影响<br>sentinel parallel-syncs</p>
+<p>sentinel failover-timeout：制定failover的过期时间，超过此时间没有触发任何的failover操作，当前的sentinel会认为此次的failover擦走哦失败。 sentinel failover-timeout</p>
+<p>sentinel notification-script ：当进行failover时，可以指定一个通知脚本用来通知系统管理员，当前集群的情况。脚本被允许执行的最大时间为60秒，超过这个时间，脚本会被kill。 sentinel notification-script </p>
+<ol>
+<li>稍后重试，最大重试次数为10; </li>
+<li>执行结束，无需重试</li>
+</ol>
+<p>sentinel client-reconfig-script：<br>failover之后重配置客户端，执行脚本时会传递大量参数，请参考相关文档</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;本文将主要分析redis sentinel模式中sentinel（哨兵）所起作用&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&quot;Sentinel主要功能&quot;&gt;&lt;a href=&quot;#Sentinel主要功能&quot; class=&quot;headerlink&quot; title=&quot;Sentinel主要功能&quot;&gt;&lt;/a&gt;Sentinel主要功能&lt;/h3&gt;&lt;p&gt;sentinel主要功能是在主库（master）出现问题后，实现：&lt;strong&gt;master存活检测、主从运行情况检测、自动failover、主从切换等高可用&lt;/strong&gt;。redis的sentinel最小配置是一主一从，实现故障转移高可用。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="redis" scheme="https://minichou.github.io/categories/redis/"/>
+    
+    
+      <category term="redis" scheme="https://minichou.github.io/tags/redis/"/>
+    
+      <category term="sentinel原理" scheme="https://minichou.github.io/tags/sentinel%E5%8E%9F%E7%90%86/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>redis sentinel（哨兵模式）高可用集群搭建及spring集成</title>
+    <link href="https://minichou.github.io/2017/03/23/redis-sentinel%EF%BC%88%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%EF%BC%89%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8Aspring%E9%9B%86%E6%88%90/"/>
+    <id>https://minichou.github.io/2017/03/23/redis-sentinel（哨兵模式）高可用集群搭建及spring集成/</id>
+    <published>2017-03-23T09:42:36.000Z</published>
+    <updated>2017-03-23T09:50:49.045Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote>
+<p>本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。</p>
+</blockquote>
+<a id="more"></a>
+<h2 id="一、Sentinel介绍"><a href="#一、Sentinel介绍" class="headerlink" title="一、Sentinel介绍"></a>一、Sentinel介绍</h2><p>Sentinel是Redis的高可用性（HA）解决方案，由一个或多个Sentinel实例组成的Sentinel系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器故障时，自动将下线主服务器属下的某个从服务器升级为新的主服务器，然后由新的主服务器代替已下线的主服务器继续处理命令请求。Redis提供的sentinel（哨兵）机制，通过sentinel模式启动redis后，自动监控master/slave的运行状态，<strong>基本原理是：心跳机制+投票裁决</strong></p>
+<ul>
+<li>监控（Monitoring）： Sentinel 会不断地检查你的主服务器和从服务器是否运作正常。</li>
+<li>提醒（Notification）： 当被监控的某个 Redis 服务器出现问题时， Sentinel 可以通过 API向管理员或者其他应用程序发送通知。</li>
+<li>自动故障迁移（Automatic failover）： 当一个主服务器不能正常工作时， Sentinel 会开始一次自动故障迁移操作， 它会将失效主服务器的其中一个从服务器选举出来，升级为新的主服务器， 并让失效主服务器的其他从服务器改为复制新的主服务器； 当客户端试图连接失效的主服务器时， 集群也会向客户端返回新主服务器的地址， 使得集群可以使用新主服务器代替失效服务器。<h2 id="二、Sentinel的主从原理"><a href="#二、Sentinel的主从原理" class="headerlink" title="二、Sentinel的主从原理"></a>二、Sentinel的主从原理</h2>以下为Sentinel架构以及主从切换图：</li>
+</ul>
+<p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/1417705-file_1490244393480_232c.png" alt=""></p>
+<p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/63944901-file_1490244479018_b31b.png" alt=""></p>
+<p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/51631728-file_1490244543432_6e50.png" alt=""></p>
+<p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/71163166-file_1490244585501_5e72.png" alt=""></p>
+<p>Jedis2.2.2之前版本，因为主从实例地址(IP PORT)是不同的，当故障发生进行主从切换后，应用程序无法知道新地址，故在Jedis2.2.2中新增了对Sentinel的支持，应用通过redis.clients.jedis.JedisSentinelPool.getResource()取得的Jedis实例会及时更新到新的主实例地址。</p>
+<h2 id="三、Redis-Sentinel高可用集群搭建"><a href="#三、Redis-Sentinel高可用集群搭建" class="headerlink" title="三、Redis Sentinel高可用集群搭建"></a>三、Redis Sentinel高可用集群搭建</h2><p>首先稍微介绍下如何在linux上安装redis</p>
+<h3 id="redis安装"><a href="#redis安装" class="headerlink" title="redis安装"></a>redis安装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ wget http://download.redis.io/releases/redis-3.2.8.tar.gz</div><div class="line">$ tar xzf redis-3.2.8.tar.gz</div><div class="line">$ <span class="built_in">cd</span> redis-3.2.8</div><div class="line">$ make</div></pre></td></tr></table></figure>
+<p>测试：<br>首先启动redis服务<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-server</div></pre></td></tr></table></figure></p>
+<p>然后打开一个新的命令窗口，启动redis client端进行测试。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli </div><div class="line">127.0.0.1:6379&gt; <span class="built_in">set</span> name fish</div><div class="line">OK</div><div class="line">127.0.0.1:6379&gt; get name</div><div class="line"><span class="string">"fish"</span></div></pre></td></tr></table></figure></p>
+<h4 id="redis-sentinel集群搭建"><a href="#redis-sentinel集群搭建" class="headerlink" title="redis sentinel集群搭建"></a>redis sentinel集群搭建</h4><p>硬件条件有限，这里我将采用伪分布式进行搭建，所有节点都在同一台虚拟机，通过不同端口区分：2个哨兵，1个主redis，2个从redis<br>首先在redis目录创建conf目录，然后在其中添加一下配置文件，配置文件如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8/conf$ ls -1</div><div class="line">redis-master-6379.conf</div><div class="line">redis-slave-6380.conf</div><div class="line">redis-slave-6381.conf</div><div class="line">sentinel-63791.conf</div><div class="line">sentinel-63792.conf</div></pre></td></tr></table></figure>
+<p>redis节点配置可通过复制redis目录下的redis.conf默认配置进行相应修改，sentinel节点的配置文件则可通过复制redis目录下的sentinel.conf配置内容进行相应修改。<br>sentinel_63791.conf 配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">port 63791</div><div class="line">daemonize yes</div><div class="line">logfile <span class="string">"/var/log/sentinel_63791.log"</span></div><div class="line"><span class="comment">#master-1</span></div><div class="line">sentinel monitor master-1 192.168.78.99 6379 2</div><div class="line">sentinel down-after-milliseconds master-1 5000</div><div class="line">sentinel failover-timeout master-1 18000</div><div class="line">sentinel auth-pass master-1 yingjun</div><div class="line">sentinel parallel-syncs master-1 1</div></pre></td></tr></table></figure></p>
+<p>sentinel_63792.conf 配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">port 63792</div><div class="line">daemonize yes</div><div class="line">logfile <span class="string">"/var/log/sentinel_63792.log"</span></div><div class="line"><span class="comment">#master-1</span></div><div class="line">sentinel monitor master-1 192.168.78.99 6379 2</div><div class="line">sentinel down-after-milliseconds master-1 5000</div><div class="line">sentinel failover-timeout master-1 18000</div><div class="line">sentinel auth-pass master-1 yingjun</div><div class="line">sentinel parallel-syncs master-1 1</div></pre></td></tr></table></figure></p>
+<p>redis_master_6379.conf 配置：<br>在原配置文件中作如下修改：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">port 6379</div><div class="line">daemonize yes</div><div class="line">requirepass yingjun</div><div class="line">masterauth yingjun</div></pre></td></tr></table></figure></p>
+<p>redis_slave_6380.conf 配置：<br>在原配置文件中作如下修改：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">port 6380</div><div class="line">daemonize yes</div><div class="line">requirepass yingjun</div><div class="line">slaveof 192.168.78.99 6379</div><div class="line">masterauth yingjun</div></pre></td></tr></table></figure></p>
+<p>redis_slave_6381.conf 配置：<br>在原配置文件中作如下修改：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">port 6381</div><div class="line">daemonize yes</div><div class="line">requirepass yingjun</div><div class="line">slaveof 192.168.78.99 6379</div><div class="line">masterauth yingjun</div></pre></td></tr></table></figure></p>
+<p>按如下顺序依次启动服务：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">./redis-server ../conf/redis_master_6379.conf</div><div class="line">./redis-server ../conf/redis_slave_6381.conf    </div><div class="line">./redis-server ../conf/redis_slave_6382.conf    </div><div class="line">./redis-sentinel ../conf/sentinel_63791.conf</div><div class="line">./redis-sentinel ../conf/sentinel_63792.conf</div></pre></td></tr></table></figure></p>
+<p>查看进程是否都已经启动：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~$ ps -ef|grep redis</div><div class="line">fish     30233  2408  0 15:23 ?        00:00:03 src/redis-server *:6379</div><div class="line">fish     30257  2408  0 15:24 ?        00:00:03 src/redis-server *:6380</div><div class="line">fish     30270  2408  0 15:24 ?        00:00:03 src/redis-server *:6381</div><div class="line">fish     30503  2408  0 16:06 ?        00:00:00 src/redis-sentinel *:63791 [sentinel]</div><div class="line">fish     30514  2408  0 16:06 ?        00:00:00 src/redis-sentinel *:63792 [sentinel]</div><div class="line">fish     30549  8143  0 16:09 pts/18   00:00:00 grep --color=auto redis</div></pre></td></tr></table></figure>
+<p>查看master的状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 6379</div><div class="line">10.14.137.85:6379&gt; <span class="built_in">set</span> name tom</div><div class="line">(error) NOAUTH Authentication required.</div><div class="line">10.14.137.85:6379&gt; auth fish@123</div><div class="line">OK</div><div class="line">10.14.137.85:6379&gt; info replication</div><div class="line"><span class="comment"># Replication</span></div><div class="line">role:master</div><div class="line">connected_slaves:2</div><div class="line">slave0:ip=10.14.137.85,port=6380,state=online,offset=66732,lag=1</div><div class="line">slave1:ip=10.14.137.85,port=6381,state=online,offset=66732,lag=1</div><div class="line">master_repl_offset:66871</div><div class="line">repl_backlog_active:1</div><div class="line">repl_backlog_size:1048576</div><div class="line">repl_backlog_first_byte_offset:2</div><div class="line">repl_backlog_histlen:66870</div><div class="line">10.14.137.85:6379&gt;</div></pre></td></tr></table></figure></p>
+<p>可以看到role为master，同时显示了旗下有两个slave<br>通过src/redis-cli -h 10.14.137.85 -p 6379命令登录master客户端，如何redis设置了password，此时可以进入，但是不能进行操作，需通过autho password命令授权后，在可进行其他操作。也可登录时加上-a password参数指定密码。</p>
+<p>查看slave的状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 6380</div><div class="line">10.14.137.85:6380&gt; get name</div><div class="line">(error) NOAUTH Authentication required.</div><div class="line">10.14.137.85:6380&gt; auth fish@123</div><div class="line">OK</div><div class="line">10.14.137.85:6380&gt; info replication</div><div class="line"><span class="comment"># Replication</span></div><div class="line">role:slave</div><div class="line">master_host:10.14.137.85</div><div class="line">master_port:6379</div><div class="line">master_link_status:up</div><div class="line">master_last_io_seconds_ago:0</div><div class="line">master_sync_in_progress:0</div><div class="line">slave_repl_offset:84567</div><div class="line">slave_priority:100</div><div class="line">slave_read_only:1</div><div class="line">connected_slaves:0</div><div class="line">master_repl_offset:0</div><div class="line">repl_backlog_active:0</div><div class="line">repl_backlog_size:1048576</div><div class="line">repl_backlog_first_byte_offset:0</div><div class="line">repl_backlog_histlen:0</div><div class="line">10.14.137.85:6380&gt;</div></pre></td></tr></table></figure></p>
+<p>可以看到role为slave，只读不能写</p>
+<p>查看sentinel的状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 63791</div><div class="line">10.14.137.85:63791&gt; info sentinel</div><div class="line">DENIED Redis is running <span class="keyword">in</span> protected mode because protected mode is enabled, no <span class="built_in">bind</span> address was specified, no authentication password is requested to clients. In this mode connections are only accepted from the loopback interface. If you want to connect from external computers to Redis you may adopt one of the following solutions: 1) Just <span class="built_in">disable</span> protected mode sending the <span class="built_in">command</span> <span class="string">'CONFIG SET protected-mode no'</span> from the loopback interface by connecting to Redis from the same host the server is running, however MAKE SURE Redis is not publicly accessible from internet <span class="keyword">if</span> you <span class="keyword">do</span> so. Use CONFIG REWRITE to make this change permanent. 2) Alternatively you can just <span class="built_in">disable</span> the protected mode by editing the Redis configuration file, and setting the protected mode option to <span class="string">'no'</span>, and <span class="keyword">then</span> restarting the server. 3) If you started the server manually just <span class="keyword">for</span> testing, restart it with the <span class="string">'--protected-mode no'</span> option. 4) Setup a <span class="built_in">bind</span> address or an authentication password. NOTE: You only need to <span class="keyword">do</span> one of the above things <span class="keyword">in</span> order <span class="keyword">for</span> the server to start accepting connections from the outside.</div><div class="line">10.14.137.85:63791&gt;</div></pre></td></tr></table></figure></p>
+<p>从以上输出可以发现，竟然出错了，仔细查看输出信息，说是redis运行在保护模式<br>protected-mode 是为了禁止公网访问redis cache，加强redis安全的。它启用的条件，有两个：</p>
+<ul>
+<li>没有bind IP</li>
+<li>没有设置访问密码</li>
+</ul>
+<p>如果启用了，则只能够通过lookback ip（127.0.0.1）访问Redis cache，如果从外网访问，则会返回相应的错误信息，就是上图中的信息。<br>因此在新的版本中，应该配置绑定IP和访问密码，这样的话才不会报错误<br>这里master及两台slave redis由于设置了pass，所以不会提示，但sentinel既没设置pass也没绑定ip，所以连接sentinel时出现以上提示，解决方案：</p>
+<ol>
+<li>更改配置文件，将protected-mode设置为no</li>
+<li>通过命令关闭保护模式：CONFIG SET protected-mode no</li>
+<li>重启服务，启动时加上参数：–protected-mode no</li>
+<li>绑定ip或设置pass</li>
+</ol>
+<p>采取其中一种即可。<br>ok后，查看sentinel状态：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 63791</div><div class="line">10.14.137.85:63791&gt; info sentinel</div><div class="line"><span class="comment"># Sentinel</span></div><div class="line">sentinel_masters:1</div><div class="line">sentinel_tilt:0</div><div class="line">sentinel_running_scripts:0</div><div class="line">sentinel_scripts_queue_length:0</div><div class="line">sentinel_simulate_failure_flags:0</div><div class="line">master0:name=master-1,status=ok,address=10.14.137.85:6379,slaves=2,sentinels=2</div><div class="line">10.14.137.85:63791&gt;</div></pre></td></tr></table></figure></p>
+<p>接下来验证redis sentinel的主从切换：</p>
+<p>首先关闭主redis（6379）服务（shutdown）。<br>查看哨兵，发现端口号为6380的从服务变成了主服务,sentinel自动完成了故障切换。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ <span class="built_in">kill</span> -9 31013</div><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 63791</div><div class="line">10.14.137.85:63791&gt; info sentinel</div><div class="line"><span class="comment"># Sentinel</span></div><div class="line">sentinel_masters:1</div><div class="line">sentinel_tilt:0</div><div class="line">sentinel_running_scripts:0</div><div class="line">sentinel_scripts_queue_length:0</div><div class="line">sentinel_simulate_failure_flags:0</div><div class="line">master0:name=master-1,status=ok,address=10.14.137.85:6380,slaves=2,sentinels=2</div><div class="line">10.14.137.85:63791&gt;</div></pre></td></tr></table></figure></p>
+<p>可以看到哨兵所监听的master address变成了address=10.14.137.85:6380</p>
+<p>启动刚才被shutdown的6379服务并查看，发现它变成了从服务。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 6380</div><div class="line">10.14.137.85:6380&gt; info replication</div><div class="line">NOAUTH Authentication required.</div><div class="line">10.14.137.85:6380&gt; auth fish@123</div><div class="line">OK</div><div class="line">10.14.137.85:6380&gt; info replication</div><div class="line"><span class="comment"># Replication</span></div><div class="line">role:master</div><div class="line">connected_slaves:1</div><div class="line">slave0:ip=10.14.137.85,port=6381,state=online,offset=22085,lag=0</div><div class="line">master_repl_offset:22085</div><div class="line">repl_backlog_active:1</div><div class="line">repl_backlog_size:1048576</div><div class="line">repl_backlog_first_byte_offset:2</div><div class="line">repl_backlog_histlen:22084</div><div class="line">10.14.137.85:6380&gt;</div></pre></td></tr></table></figure>
+<p>可见，之前的slave变成了master<br>重新启动之前的master：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-server conf/redis-master-6379.conf fish@<span class="built_in">test</span>-vm:~/server/redis-3.2.8$ src/redis-cli -h 10.14.137.85 -p 6379 <span class="_">-a</span> fish@123</div><div class="line">10.14.137.85:6379&gt; info replication</div><div class="line"><span class="comment"># Replication</span></div><div class="line">role:slave</div><div class="line">master_host:10.14.137.85</div><div class="line">master_port:6380</div><div class="line">master_link_status:up</div><div class="line">master_last_io_seconds_ago:1</div><div class="line">master_sync_in_progress:0</div><div class="line">slave_repl_offset:46407</div><div class="line">slave_priority:100</div><div class="line">slave_read_only:1</div><div class="line">connected_slaves:0</div><div class="line">master_repl_offset:0</div><div class="line">repl_backlog_active:0</div><div class="line">repl_backlog_size:1048576</div><div class="line">repl_backlog_first_byte_offset:0</div><div class="line">repl_backlog_histlen:0</div><div class="line">10.14.137.85:6379&gt;</div></pre></td></tr></table></figure></p>
+<p>发现之前的master下线重启之后role变为了slave。</p>
+<h2 id="四、Jedis-Sentinel教程"><a href="#四、Jedis-Sentinel教程" class="headerlink" title="四、Jedis Sentinel教程"></a>四、Jedis Sentinel教程</h2><p>Maven依赖：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>redis.clients<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jedis<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.8.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="comment">&lt;!-- spring-redis --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.data<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-data-redis<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.6.4.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>redis的配置文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#redis config</span></div><div class="line">redis.pass=yingjun</div><div class="line">redis.pool.maxTotal=105</div><div class="line">redis.pool.maxIdle=10</div><div class="line">redis.pool.maxWaitMillis=60000</div><div class="line">redis.pool.testOnBorrow=<span class="literal">true</span></div><div class="line"></div><div class="line">sentinel1.ip=192.168.78.99</div><div class="line">sentinel1.port=63791</div><div class="line"></div><div class="line">sentinel2.ip=192.168.78.99</div><div class="line">sentinel2.port=63792</div></pre></td></tr></table></figure></p>
+<p>Spring的配置文件：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div></pre></td><td class="code"><pre><div class="line"><span class="comment">&lt;!-- Redis 配置 --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"jedisPoolConfig"</span> <span class="attr">class</span>=<span class="string">"redis.clients.jedis.JedisPoolConfig"</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"maxTotal"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pool.maxTotal&#125;"</span> /&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"maxIdle"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pool.maxIdle&#125;"</span> /&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"maxWaitMillis"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pool.maxWaitMillis&#125;"</span> /&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"testOnBorrow"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pool.testOnBorrow&#125;"</span> /&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line"></div><div class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"sentinelConfiguration"</span></span></div><div class="line">    <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.RedisSentinelConfiguration"</span>&gt;</div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"master"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.RedisNode"</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"name"</span> <span class="attr">value</span>=<span class="string">"master-1"</span>&gt;</span><span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"sentinels"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">set</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.RedisNode"</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"host"</span> <span class="attr">value</span>=<span class="string">"$&#123;sentinel1.ip&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"port"</span> <span class="attr">value</span>=<span class="string">"$&#123;sentinel1.port&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line">            <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.RedisNode"</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"host"</span> <span class="attr">value</span>=<span class="string">"$&#123;sentinel2.ip&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"port"</span> <span class="attr">value</span>=<span class="string">"$&#123;sentinel2.port&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line">            <span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">set</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line"></div><div class="line"><span class="comment">&lt;!-- Jedis ConnectionFactory连接配置 --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"jedisConnectionFactory"</span></span></div><div class="line">    <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.connection.jedis.JedisConnectionFactory"</span>&gt;</div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"password"</span> <span class="attr">value</span>=<span class="string">"$&#123;redis.pass&#125;"</span>&gt;</span><span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"poolConfig"</span> &gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">ref</span> <span class="attr">bean</span>=<span class="string">"jedisPoolConfig"</span>/&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">property</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">constructor-arg</span> <span class="attr">name</span>=<span class="string">"sentinelConfig"</span> <span class="attr">ref</span>=<span class="string">"sentinelConfiguration"</span>&gt;</span><span class="tag">&lt;/<span class="name">constructor-arg</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div><div class="line"></div><div class="line"><span class="comment">&lt;!-- redisTemplate配置，redisTemplate是对Jedis的对redis操作的扩展，有更多的操作，封装使操作更便捷 --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">id</span>=<span class="string">"redisTemplate"</span> <span class="attr">class</span>=<span class="string">"org.springframework.data.redis.core.StringRedisTemplate"</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"connectionFactory"</span> <span class="attr">ref</span>=<span class="string">"jedisConnectionFactory"</span> /&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">bean</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>代码中直接用redisTemplate调用：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="meta">@Override</span></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">add</span><span class="params">(<span class="keyword">final</span> KeyToken tkey)</span> </span>&#123;</div><div class="line">    <span class="keyword">boolean</span> result = redisTemplate.execute(<span class="keyword">new</span> RedisCallback&lt;Boolean&gt;() &#123;</div><div class="line"></div><div class="line">        <span class="meta">@Override</span></div><div class="line">        <span class="function"><span class="keyword">public</span> Boolean <span class="title">doInRedis</span><span class="params">(RedisConnection connection)</span> <span class="keyword">throws</span> DataAccessException </span>&#123;</div><div class="line">            RedisSerializer&lt;String&gt; serializer = getRedisSerializer();</div><div class="line">            <span class="keyword">byte</span>[] key = serializer.serialize(tkey.getIndex());</div><div class="line">            <span class="keyword">byte</span>[] name = serializer.serialize(tkey.getExpire_time());</div><div class="line">            <span class="keyword">return</span> connection.setNX(key, name);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">    &#125;);</div><div class="line">    <span class="keyword">return</span> result;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。&lt;/p&gt;
+&lt;/blockquote&gt;
+    
+    </summary>
+    
+      <category term="redis" scheme="https://minichou.github.io/categories/redis/"/>
+    
+    
+      <category term="redis" scheme="https://minichou.github.io/tags/redis/"/>
+    
+      <category term="sentinel" scheme="https://minichou.github.io/tags/sentinel/"/>
+    
+      <category term="spring-data-redis" scheme="https://minichou.github.io/tags/spring-data-redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>hexo添加打赏功能</title>
+    <link href="https://minichou.github.io/2017/03/21/hexo%E6%B7%BB%E5%8A%A0%E6%89%93%E8%B5%8F%E5%8A%9F%E8%83%BD/"/>
+    <id>https://minichou.github.io/2017/03/21/hexo添加打赏功能/</id>
+    <published>2017-03-21T09:39:02.000Z</published>
+    <updated>2017-03-21T10:09:41.348Z</updated>
+    
+    <content type="html"><![CDATA[<p>本文将介绍如何在hexo中添加打赏功能</p>
+<h2 id="第一步：创建打赏html代码文件"><a href="#第一步：创建打赏html代码文件" class="headerlink" title="第一步：创建打赏html代码文件"></a>第一步：创建打赏html代码文件</h2><p>首先咱们在主题下layout文件里，创建一个名叫：donate.ejs的文件<br>在里面输入:<br><a id="more"></a><br><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="comment">&lt;!-- 添加捐赠图标 --&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">class</span>=<span class="string">"post-donate"</span> <span class="attr">style</span>=<span class="string">"margin-bottom: 30px;margin-top: 10px;"</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"donate_board"</span> <span class="attr">class</span>=<span class="string">"donate_bar center"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">a</span> <span class="attr">id</span>=<span class="string">"btn_donate"</span> <span class="attr">class</span>=<span class="string">"btn_donate"</span> <span class="attr">href</span>=<span class="string">"javascript:;"</span> <span class="attr">title</span>=<span class="string">"donate"</span>&gt;</span><span class="tag">&lt;/<span class="name">a</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">span</span> <span class="attr">class</span>=<span class="string">"donate_txt"</span>&gt;</span></div><div class="line">           <span class="tag">&lt;<span class="name">%=theme.donate_message%</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">span</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">br</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"donate_guide"</span> <span class="attr">class</span>=<span class="string">"donate_bar donate_bar2 center hidden"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"/css/images/alipay.jpg"</span> <span class="attr">id</span>=<span class="string">"weixin"</span> <span class="attr">title</span>=<span class="string">"alipay doante"</span> <span class="attr">alt</span>=<span class="string">"alipay doante"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"/css/images/wechatpay.jpg"</span> <span class="attr">title</span>=<span class="string">"wechatpay donate"</span> <span class="attr">id</span>=<span class="string">"zhifubao"</span> <span class="attr">alt</span>=<span class="string">"echatpay donate"</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">script</span> <span class="attr">type</span>=<span class="string">"text/javascript"</span>&gt;</span><span class="undefined"></span></div><div class="line">        $('#weixin').hover()</div><div class="line">        document.getElementById('btn_donate').onclick = function () &#123;</div><div class="line">            $('#donate_board').addClass('hidden');</div><div class="line">            $('#donate_guide').removeClass('hidden');</div><div class="line">        &#125;</div><div class="line"></div><div class="line">    <span class="tag">&lt;/<span class="name">script</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>其中，二维码图片只需放入主题中的source\css\images文件夹内，img的src设置src=”/css/images/alipay.jpg”</p>
+<h2 id="第二步：创建打赏css样式文件"><a href="#第二步：创建打赏css样式文件" class="headerlink" title="第二步：创建打赏css样式文件"></a>第二步：创建打赏css样式文件</h2><p>然后在主题source\css_partial目录下创建一个相应的css文件donate.styl，输入以下内容：<br><figure class="highlight css"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div></pre></td><td class="code"><pre><div class="line"><span class="selector-class">.donate_bar</span> &#123;</div><div class="line">    </div><div class="line">    <span class="attribute">text-align</span>: center;</div><div class="line">    <span class="attribute">margin-top</span>: <span class="number">5%</span>;</div><div class="line">  </div><div class="line">&#125;</div><div class="line"><span class="selector-class">.donate_bar2</span>&#123;</div><div class="line">    <span class="attribute">z-index</span>: <span class="number">9999</span>;</div><div class="line">    <span class="attribute">text-align</span>: center;</div><div class="line">    <span class="attribute">top</span>: <span class="number">50%</span>;</div><div class="line">    <span class="attribute">left</span>: <span class="number">50%</span>;</div><div class="line">    <span class="attribute">width</span>: <span class="number">660px</span>;</div><div class="line">    <span class="attribute">height</span>: <span class="number">360px</span>;</div><div class="line">    <span class="attribute">margin</span>: -<span class="number">180px</span> <span class="number">0</span> <span class="number">30px</span> -<span class="number">330px</span>;</div><div class="line">    <span class="attribute">border-radius</span>: <span class="number">5px</span>;</div><div class="line">    <span class="attribute">border</span>: solid <span class="number">2px</span> <span class="number">#666</span>;</div><div class="line">    <span class="attribute">background-color</span>: <span class="number">#fff</span>;</div><div class="line">    </div><div class="line">    <span class="attribute">box-shadow</span>: <span class="number">0</span> <span class="number">0</span> <span class="number">10px</span> <span class="number">#666</span>;</div><div class="line">&#125;</div><div class="line"><span class="selector-class">.donate_bar</span> <span class="selector-tag">a</span><span class="selector-class">.btn_donate</span> &#123;</div><div class="line">    <span class="attribute">display</span>: inline-block;</div><div class="line">    <span class="attribute">width</span>: <span class="number">82px</span>;</div><div class="line">    <span class="attribute">height</span>: <span class="number">82px</span>;</div><div class="line">    <span class="attribute">margin-left</span>: auto;</div><div class="line">    <span class="attribute">margin-right</span>: auto;</div><div class="line">    <span class="attribute">background</span>: <span class="built_in">url</span>(http://ww1.sinaimg.cn/large/ece90acdjw1fbq75kmh0pg202a06ywee.gif)<span class="built_in">no-repeat</span>;</div><div class="line">    <span class="attribute">-webkit-transition</span>: background <span class="number">0s</span>;</div><div class="line">    <span class="attribute">-moz-transition</span>: background <span class="number">0s</span>;</div><div class="line">    <span class="attribute">-o-transition</span>: background <span class="number">0s</span>;</div><div class="line">    <span class="attribute">-ms-transition</span>: background <span class="number">0s</span>;</div><div class="line">    <span class="attribute">transition</span>: background <span class="number">0s</span></div><div class="line">&#125;</div><div class="line"><span class="selector-class">.donate_bar</span> <span class="selector-tag">a</span><span class="selector-class">.btn_donate</span><span class="selector-pseudo">:hover</span> &#123;</div><div class="line">    <span class="attribute">background-position</span>: <span class="number">0</span> -<span class="number">82px</span></div><div class="line">&#125;</div><div class="line"><span class="selector-class">.donate_bar</span> <span class="selector-class">.donate_txt</span> &#123;</div><div class="line">    <span class="attribute">display</span>: block;</div><div class="line">    <span class="attribute">color</span>: <span class="number">#9d9d9d</span>;</div><div class="line">    <span class="attribute">font</span>: <span class="number">14px</span>/<span class="number">2</span> <span class="string">"Microsoft Yahei"</span></div><div class="line">&#125;</div><div class="line"><span class="selector-class">.donate_bar</span><span class="selector-class">.hidden</span>&#123;</div><div class="line">    <span class="attribute">display</span>: none</div><div class="line">&#125;</div><div class="line"><span class="selector-class">.post-donate</span>&#123;</div><div class="line">    <span class="attribute">margin-top</span>: <span class="number">80px</span>;</div><div class="line">&#125;</div><div class="line"><span class="selector-id">#donate_guide</span>&#123;</div><div class="line">    <span class="attribute">height</span>: <span class="number">210px</span>;</div><div class="line">    <span class="attribute">width</span>: <span class="number">420px</span>;</div><div class="line">    <span class="attribute">margin</span>: <span class="number">0</span> auto;</div><div class="line">&#125;</div><div class="line"><span class="selector-id">#donate_guide</span> <span class="selector-tag">img</span>&#123;</div><div class="line">    <span class="attribute">height</span>: <span class="number">200px</span>;</div><div class="line">    <span class="attribute">height</span>: <span class="number">200px</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h2 id="第三步：将创建的css文件和ejs文件整合到主题中"><a href="#第三步：将创建的css文件和ejs文件整合到主题中" class="headerlink" title="第三步：将创建的css文件和ejs文件整合到主题中"></a>第三步：将创建的css文件和ejs文件整合到主题中</h2><p>首先修改主题source\css目录下的style.styl文件，在其中加入@import “_partial/donate”<br>接着，在layout/commmon/article.ejs中，在<br><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">footer</span> <span class="attr">class</span>=<span class="string">"article-footer"</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>前面加入：<br><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"donate"</span> <span class="attr">style</span>=<span class="string">"text-align:center"</span>&gt;</span></div><div class="line"> <span class="tag">&lt;<span class="name">%-</span> <span class="attr">partial</span>('<span class="attr">donate</span>') %&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">div</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>如果你想自定义一个页面是否带有打赏的地方，则换成以下代码：<br><figure class="highlight html"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">%</span> <span class="attr">if</span>(!<span class="attr">index</span> &amp;&amp; <span class="attr">theme.donate</span> &amp;&amp; (<span class="attr">post.donate</span> || <span class="attr">post.donate</span> == <span class="string">undefined))&#123;</span> %&gt;</span></div><div class="line">	<span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">"donate"</span> <span class="attr">style</span>=<span class="string">"text-align:center"</span>&gt;</span></div><div class="line">	<span class="tag">&lt;<span class="name">%-</span> <span class="attr">partial</span>('<span class="attr">donate</span>') %&gt;</span></div><div class="line">	<span class="tag">&lt;/<span class="name">div</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">%</span> &#125; %&gt;</span></div></pre></td></tr></table></figure></p>
+<h2 id="第四步：编写配置文件"><a href="#第四步：编写配置文件" class="headerlink" title="第四步：编写配置文件"></a>第四步：编写配置文件</h2><p>在主题配置文件 _config.yml添加打赏相关配置，根据配置 控制文章是否开启打赏功能，还可以自定义设置打赏文案。例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#是否开启打赏</span></div><div class="line">donate: <span class="literal">true</span></div><div class="line"><span class="comment">#打赏文案</span></div><div class="line">donate_message: 欣赏此文？求鼓励，求支持！</div></pre></td></tr></table></figure></p>
+<p>donate为false，则关闭打赏功能，如果要单独控制某篇文章，则donate为true的情况下，新建文章时，只需要在该篇文章上添加 donate: false即可。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;本文将介绍如何在hexo中添加打赏功能&lt;/p&gt;
+&lt;h2 id=&quot;第一步：创建打赏html代码文件&quot;&gt;&lt;a href=&quot;#第一步：创建打赏html代码文件&quot; class=&quot;headerlink&quot; title=&quot;第一步：创建打赏html代码文件&quot;&gt;&lt;/a&gt;第一步：创建打赏html代码文件&lt;/h2&gt;&lt;p&gt;首先咱们在主题下layout文件里，创建一个名叫：donate.ejs的文件&lt;br&gt;在里面输入:&lt;br&gt;
+    
+    </summary>
+    
+      <category term="杂谈" scheme="https://minichou.github.io/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    
+      <category term="hexo" scheme="https://minichou.github.io/tags/hexo/"/>
+    
+      <category term="打赏" scheme="https://minichou.github.io/tags/%E6%89%93%E8%B5%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Notes On Creating A Hexo Theme</title>
+    <link href="https://minichou.github.io/2016/01/02/2016-01-02-Notes-On-Creating-A-Hexo-Theme/"/>
+    <id>https://minichou.github.io/2016/01/02/2016-01-02-Notes-On-Creating-A-Hexo-Theme/</id>
+    <published>2016-01-01T16:00:00.000Z</published>
+    <updated>2017-03-24T06:17:27.725Z</updated>
+    
+    <content type="html"><![CDATA[<div class="image-strip"><br><img src="https://s3.amazonaws.com/ptsteadman-images/hexo.png"><br></div>
+
+<h2 id="Setup"><a href="#Setup" class="headerlink" title="Setup"></a>Setup</h2><p>To Update NPM: <code>npm install npm@latest -g</code>.</p>
+<p>In 2015 it makes sense to use NVM.  <a href="http://linoxide.com/ubuntu-how-to/install-node-js-ubuntu" target="_blank" rel="external">NVM Installation<br>Instructions</a>.</p>
+<p>Update NPM: <code>npm install npm@latest -g</code></p>
+<p>Hexo: why can’t you use helper functions in source code?<br>This should be in docs.</p>
+<h2 id="Creating-a-Custom-Index-File-in-Hexo"><a href="#Creating-a-Custom-Index-File-in-Hexo" class="headerlink" title="Creating a Custom Index File in Hexo"></a>Creating a Custom Index File in Hexo</h2><p>Trying to generate a custom index file in source, hexo would ignore<br><code>source/index.md</code> no matter what I did.  What I had to do was uninstall<br><code>hexo-generator-index</code>.  <a href="https://github.com/hexojs/hexo/issues/1077" target="_blank" rel="external">See<br>here</a>.  Then it works.  So, that<br>will be part of the setup for my theme.  But, it’s worth it in order to properly<br>seperate the theme from the content, I think.  Having everyone edit the theme<br>index.ejs template is no good.</p>
+<h2 id="Hexo-Rendering-Raw-EJS-File-Problem-I-Encountered"><a href="#Hexo-Rendering-Raw-EJS-File-Problem-I-Encountered" class="headerlink" title="Hexo Rendering Raw EJS File Problem I Encountered"></a>Hexo Rendering Raw EJS File Problem I Encountered</h2><p>Sometimes the server would keep rendering an old version of my code, but as<br>text.  So I’d see stuff like</p>
+<pre><code>&lt;% if (site.tags.length){ %&gt;
+</code></pre><p>The raw ejs, essentially.  Restarting the server or running <code>hexo clean</code> didn’t<br>do anything.</p>
+<p>After some time, I realized it was due to the gedit swap files being read by<br>hexo as the actual layout files: for example, <code>tag.ejs~</code>.  My <code>partial</code> helpers<br>looked like: <code>&lt;%- partial(&#39;_partials/tag&#39;) %&gt;</code>, and apparently hexo was reading<br>in <code>tag.ejs~</code> instead of <code>tag.ejs</code>.  And therefore, the ejs wasn’t rendering.</p>
+<p>To fix this, I simply changed my partial helper to <code>&lt;%-
+partial(&#39;_partials/tag.ejs&#39;) %&gt;</code>.  Problem solved.</p>
+<h2 id="Hexo-Excerpt-Variable"><a href="#Hexo-Excerpt-Variable" class="headerlink" title="Hexo Excerpt Variable"></a>Hexo Excerpt Variable</h2><p>I was confused by the behavior of the hexo <code>excerpt</code> variable.  If you define<br><code>excerpt: something</code> in the front matter, hexo ignores that.  Instead, to get it<br>to work, one needs to add a <code>&lt;!-- more --&gt;</code> comment in the source of the post.<br>Or, you can install a plugin that allows you to define custom excerpt in the<br>front matter.</p>
+<h2 id="Scripts-Directory"><a href="#Scripts-Directory" class="headerlink" title="Scripts Directory"></a>Scripts Directory</h2><p>One of the things I really discovered too late is the “Scripts” directory in the<br>theme folder.  In Hexo, the various plugins drive the structure of the site, as<br>opposed to the placement of different files and directories, as in Jekyll.  The<br>plugins programatically create folder structure, etc, where in Jekyll I mostly<br>used the liquid markup to structure the site.  </p>
+<p>The problem is, then, that the user wants to extend hexo to do some sort of<br>custom thing.  If one had to publish a new plugin, that’d be too much work.  But<br>the theme level scripts folder allows one to extend the base hexo functionality<br>in ‘user space’ effectively.</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;div class=&quot;image-strip&quot;&gt;&lt;br&gt;&lt;img src=&quot;https://s3.amazonaws.com/ptsteadman-images/hexo.png&quot;&gt;&lt;br&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;Setup&quot;&gt;&lt;a href=&quot;#Setup&quot; clas
+    
+    </summary>
+    
+      <category term="Hexo" scheme="https://minichou.github.io/categories/Hexo/"/>
+    
+    
+      <category term="Programming" scheme="https://minichou.github.io/tags/Programming/"/>
+    
+      <category term="Design" scheme="https://minichou.github.io/tags/Design/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>How To Impress Employers at Infosessions</title>
+    <link href="https://minichou.github.io/2015/05/02/2015-05-02-How-To-Impress/"/>
+    <id>https://minichou.github.io/2015/05/02/2015-05-02-How-To-Impress/</id>
+    <published>2015-05-01T16:00:00.000Z</published>
+    <updated>2017-03-24T06:17:27.723Z</updated>
+    
+    <content type="html"><![CDATA[<p>Top tech talent knows that industry recruiters often bring a stack of<br>pre-negotiated offers to university infosessions, so that they can snag<br>programmers and UX designers who really stand out.  Instead of spending valuable<br>time validating a particularly promising candidate’s skillset through a<br>protracted series of interviews, it’s often more efficient to simply <strong>give the<br>individual an offer right then and there</strong>.  Internal studies at Google have shown<br>that experienced recruiters can usually tell if a programmer has ‘what it takes’<br>just from how they act at infosessions: the insightful questions they ask, the<br>stickers on their laptop, and how they comport themselves in general.</p>
+<a id="more"></a>
+<p>Top tech talent knows that industry recruiters often bring a stack of<br>pre-negotiated offers to university infosessions, so that they can snag<br>programmers and UX designers who really stand out.  Instead of spending valuable<br>time validating a particularly promising candidate’s skillset through a<br>protracted series of interviews, it’s often more efficient to simply <strong>give the<br>individual an offer right then and there</strong>.  Internal studies at Google have shown<br>that experienced recruiters can usually tell if a programmer has ‘what it takes’<br>just from how they act at infosessions: the insightful questions they ask, the<br>stickers on their laptop, and how they comport themselves in general.</p>
+<p>Here are some of tips for optimizing your infosession performance:</p>
+<ul>
+<li><p>Ask questions to get a feel for the company’s culture.  For example, I always<br>start off by asking “do you have a mandatory drug test?”.</p>
+</li>
+<li><p>Make sure that the recruiters know you’re passionate about the company by<br>crying.  </p>
+</li>
+<li><p>Don’t be that awkward guy who goes up for more pizza while the presenter is<br>providing valuable information about the company’s agile development cycle.<br>Instead, demonstrate your ability to amortize I/O costs via bulk loading:<br>bring a whole box of pizza back to your seat.  Protip: “free swag” t-shirts<br>make great face rags, so grab a handful.</p>
+</li>
+<li><p>Stay focused by minimizing distractions.  I typically wear my Bose<br>QuietComfort noise cancelling headphones during the presentation.  This way I<br>retain more information from the PowerPoint, which really impresses the<br>recruiters during the networking session.  Follow me on Spotify to check out<br>my special “Let’s Do This Infosession” playlist.</p>
+</li>
+<li><p>Getting invited to the ‘after-infosession’ is critical.  During the networking<br>session, ask the recruiters what hotel they’re staying at, and make sure that<br>they know that you ‘know a guy’.  Without fail, someone will slip a wax-sealed<br>envelope under your door at midnight, the coveted invitation to an another, more<br>exclusive networking event.  </p>
+</li>
+</ul>
+<p>If you follow these simple tips and brush up on your data structures, you’ll<br>soon be literally <em>drowning</em> in offers, like everyone else.  If these tips don’t<br>work out for you, you probably need to get your MEng.</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Top tech talent knows that industry recruiters often bring a stack of&lt;br&gt;pre-negotiated offers to university infosessions, so that they can snag&lt;br&gt;programmers and UX designers who really stand out.  Instead of spending valuable&lt;br&gt;time validating a particularly promising candidate’s skillset through a&lt;br&gt;protracted series of interviews, it’s often more efficient to simply &lt;strong&gt;give the&lt;br&gt;individual an offer right then and there&lt;/strong&gt;.  Internal studies at Google have shown&lt;br&gt;that experienced recruiters can usually tell if a programmer has ‘what it takes’&lt;br&gt;just from how they act at infosessions: the insightful questions they ask, the&lt;br&gt;stickers on their laptop, and how they comport themselves in general.&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="Humor" scheme="https://minichou.github.io/categories/Humor/"/>
+    
+    
+      <category term="funny" scheme="https://minichou.github.io/tags/funny/"/>
+    
+      <category term="employment" scheme="https://minichou.github.io/tags/employment/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>NAV Web Service Programming Resources</title>
+    <link href="https://minichou.github.io/2015/04/08/2015-04-08-NAV-Programming-Resources/"/>
+    <id>https://minichou.github.io/2015/04/08/2015-04-08-NAV-Programming-Resources/</id>
+    <published>2015-04-07T16:00:00.000Z</published>
+    <updated>2017-03-24T06:17:27.722Z</updated>
+    
+    <content type="html"><![CDATA[<p>Here are some of the resources I found helpful for learning to develop Dynamics NAV web service based applications.</p>
+<h4 id="C-AL-Programming"><a href="#C-AL-Programming" class="headerlink" title="C/AL Programming:"></a>C/AL Programming:</h4><p><a href="http://www.consultec.es/DocTutoriales/Introduction_to_CAL_Programming.pdf" target="_blank" rel="external">Introduction to CAL Programming</a><br>This provides a good overview of the basics of CAL programming, which can become necessary in building a web service applications when a custom codeunit or page extension is required.</p>
+<h4 id="Setting-up-Web-Services"><a href="#Setting-up-Web-Services" class="headerlink" title="Setting up Web Services:"></a>Setting up Web Services:</h4><p><a href="http://vjeko.com/blog/connecting-to-nav-through-web-services-recorded-session" target="_blank" rel="external">Vjecko Web Service Recorded Session</a><br>Vjecko.com has a lot of detailed articles about web service programming, but this older post has a pdf and recorded session that shows how to expose and connect to web services from a .NET application.  Unfortunately, he shows how to create Web Service references in .NET using the now-deprecated Web Refrence method (from .NET 2) instead of the more current Service Reference method.</p>
+<p><a href="http://blogs.msdn.com/b/freddyk/archive/2010/01/20/connecting-to-nav-web-services-from-c-using-service-reference-config-file-version.aspx" target="_blank" rel="external">Using Service Reference to Connect to Web Services</a><br>This explains how to use Service Reference, using code instead of XML web.config configuration, which I found difficult to configure.  (Each time I updated the service reference, I would have to reconfigure the XML).</p>
+<h4 id="NAV-Upgrade-Process"><a href="#NAV-Upgrade-Process" class="headerlink" title="NAV Upgrade Process:"></a>NAV Upgrade Process:</h4><p><a href="http://saurav-nav.blogspot.com/2012/12/nav-2013-upgrade-part-iv-sql-migration.html" target="_blank" rel="external">Migration to SQL Server from C/SIDE Database</a><br>In order to use web services, you don’t need to be using the Role Tailored Client, but you must be using the a SQL server based NAV database.  Web Services can be configured and exposed using the Classic Client for SQL Server Databases.</p>
+<p><a href="http://blogs.msdn.com/b/nav/archive/2012/03/05/rtc-debugging.aspx" target="_blank" rel="external">Debugging Code Called by Web Services</a><br>C/AL code won’t necessarily execute the same as it did in the Classic Client when called  as a Web Service.  C/AL code called as web service execute in the NAV Server tier, instead of the client.  <a href="http://msdn.microsoft.com/en-us/library/ff477107.aspx" target="_blank" rel="external">Certain functions</a> aren’t available for code running in the NAV Server, and some design changes need to be made (for example, CONFIRM dialogue boxes don’t make sense in the context of a web service).  To debug the codeunits called through web services (or the Role Tailored Client), you will need to use Visual Studio.<br><a href="http://msdn.microsoft.com/en-us/library/dd338765.aspx#SU" target="_blank" rel="external">More information.</a></p>
+<h4 id="Deploying-a-NET-Application"><a href="#Deploying-a-NET-Application" class="headerlink" title="Deploying a .NET Application:"></a>Deploying a .NET Application:</h4><p><a href="http://www.asp.net/mvc/overview/deployment/visual-studio-web-deployment/deploying-to-iis" target="_blank" rel="external">Deploying to IIS</a>  After you’ve built a .NET application that consumes .NET web services, you’ll have to find a way to deploy it on your servers, or Azure.  Connection strings can be used to specify different NAV servers for different environments (like development, QA, and prod).</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Here are some of the resources I found helpful for learning to develop Dynamics NAV web service based applications.&lt;/p&gt;
+&lt;h4 id=&quot;C-AL-Prog
+    
+    </summary>
+    
+      <category term="Dynamics NAV" scheme="https://minichou.github.io/categories/Dynamics-NAV/"/>
+    
+    
+      <category term="Resources" scheme="https://minichou.github.io/tags/Resources/"/>
+    
+      <category term="NAV" scheme="https://minichou.github.io/tags/NAV/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Adding Lookup Field to a Page in Dynamics NAV</title>
+    <link href="https://minichou.github.io/2015/04/05/2015-04-05-Lookup-on-Page/"/>
+    <id>https://minichou.github.io/2015/04/05/2015-04-05-Lookup-on-Page/</id>
+    <published>2015-04-04T16:00:00.000Z</published>
+    <updated>2017-03-24T06:17:27.720Z</updated>
+    
+    <content type="html"><![CDATA[<p>One of the problems I faced in building a non-trivial application that consumed<br>NAV Web Services was figuring out how to “join” fields from different tables.<br>For example, when exposing a list of jobs from a job table which includes a<br>resource needed for the job, you might need more than just the resource id<br>that’s a field in the table: you might also need the resource name and<br>description.  While this is easy to get for one record, what about when you<br>need a few hundred records in a table that has been dynamically filtered?  When<br>exposing a Page as a web service, it’s easy to include the fields of the table<br>that the page is based on, but it’s less clear how to include fields from<br>another table.</p>
+<p>Forum posts like <a href="http://dynamicsuser.net/forums/p/32550/170843.aspx" target="_blank" rel="external">this</a> led me to believe that I couldn’t expose flow fields in a Page web service, and I would get exceptions when I tried to expose all the fields of a table.  In fact, it’s perfectly possible to expose a flow field: it’s <strong>flow filters</strong> that don’t work with web services.  But, I also didn’t want to modify the underlying [job] table to add a flow field, and didn’t see an easy way of adding a flow field to a Page.  I tried “joining” the data in the C# application, but found network overhead made the application unusuably slow.</p>
+<p>The solution to this problem was to use C/AL code to the Page to effectively create a lookup / flow field.  This way, the data is “pre-joined” before leaving the NAV Server, which is fast and clean, but you didn’t modify any tables.  Here’s how it’s done:</p>
+<p>Step 1. <strong>Add a Field with SourceExpression Set to a Function Name</strong></p>
+<p>To start, we create a Page using the wizard that includes all of the fields of an underlying table.  Then, we create manually add fields that will contain the lookup data from other tables.  The text in the SourceExpression column will be the name of the function that populates this field.<br><img src="http://ptsteadman.github.io/images/lookup-1.PNG" alt="Add a Field with SourceExpression Set to a Function Name"></p>
+<p>Step 2. <strong>Create Function in the Page’s C/AL Code</strong></p>
+<p>With the Page field designer open, go to the functions tab of C/AL Globals form, and add a function with the name of the text in the SourceExpression column.  Set the return type of the function with the “Locals” button, and a function trigger will appear in the C/AL code editor for your page.  Add code to the body of the function trigger that will be called for each record to provide a value for the field.<br><img src="http://ptsteadman.github.io/images/lookup-2.PNG" alt="Create Function in the Page&#39;s C/AL Code"></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;One of the problems I faced in building a non-trivial application that consumed&lt;br&gt;NAV Web Services was figuring out how to “join” fields
+    
+    </summary>
+    
+      <category term="Dynamics NAV" scheme="https://minichou.github.io/categories/Dynamics-NAV/"/>
+    
+    
+      <category term="Resources" scheme="https://minichou.github.io/tags/Resources/"/>
+    
+      <category term="NAV" scheme="https://minichou.github.io/tags/NAV/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Static NGINX Locations</title>
+    <link href="https://minichou.github.io/2015/04/01/2015-04-01-NGINX-Static-Locations/"/>
+    <id>https://minichou.github.io/2015/04/01/2015-04-01-NGINX-Static-Locations/</id>
+    <published>2015-03-31T16:00:00.000Z</published>
+    <updated>2017-03-24T06:17:27.718Z</updated>
+    
+    <content type="html"><![CDATA[<p>I try to get a lot of mileage out of the single AWS t2.micro instance I keep running,<br>which means I have many different projects running on different paths on a single server.  Everytime I finish a project, I have to relearn how to add new “locations” (paths) to the NGINX virtual host.</p>
+<p>I was really frustrated when I couldn’t figure out how to add a static location for the Jekyll<br>website I created for the game I’m developing.  I kept trying to do something like this:</p>
+<pre><code>location / {
+  root /home/ubuntu/personal-website;
+}
+location /array {
+  root /home/ubuntu/array-website/_site;
+}
+</code></pre><p>But everytime I tried to visit [<a href="http://ptsteadman.com/array" target="_blank" rel="external">http://ptsteadman.com/array</a>], I would get a 404 error.<br>I tried a bunch of things: I changed the “root” of the the <code>/</code> location to my game website, and it worked.  But no matter what I did, after using <code>sudo service nginx restart</code>,<br>trying to visit the <code>/array</code> location still resulted in a 404.  I couldn’t add the new route/location.</p>
+<p>Eventually, I realized that the text after the slash in the location is the directory that<br>NGINX will try to find in the “root” location.  So, <code>location /array</code> will look for the directory (or file)<br><code>array</code> in whatever directory “root” is set to.  So, I created a symlink to the root of my<br>static jekyll site with the command <code>ln -s /home/ubuntu/array-website/_site /home/ubuntu/array</code>, and<br>then I could set up my nginx config file in <code>sites-enabled</code> as below:</p>
+<pre><code>location / {
+  root /home/ubuntu/personal-website;
+}
+location /array {
+  root /home/ubuntu;
+}
+</code></pre><p>I think this stuff is all pretty obvious to someone who really understands NGINX and file serving,<br>but I only touch NGINX when I’ve finished a project and feel impatient to deploy.  I think it’s very confusing<br>that NGINX seems to handle paths differently between <code>/</code> locations and and <code>/foo</code> locations,<br>but a real understanding of NGINX might clear things up.</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;I try to get a lot of mileage out of the single AWS t2.micro instance I keep running,&lt;br&gt;which means I have many different projects runni
+    
+    </summary>
+    
+      <category term="NGINX" scheme="https://minichou.github.io/categories/NGINX/"/>
+    
+    
+      <category term="Web Development" scheme="https://minichou.github.io/tags/Web-Development/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Spaces for Newline Indents in VS</title>
+    <link href="https://minichou.github.io/2015/03/23/2015-03-23-Make-VS-Insert-Spaces/"/>
+    <id>https://minichou.github.io/2015/03/23/2015-03-23-Make-VS-Insert-Spaces/</id>
+    <published>2015-03-22T16:00:00.000Z</published>
+    <updated>2017-03-24T06:17:27.716Z</updated>
+    
+    <content type="html"><![CDATA[<p>It’s really annoying when Visual Studio shows you this:</p>
+<img src="http://ptsteadman.github.io/images/vs1.png">
+<p>But github or vim shows you the same file like this:</p>
+<img src="http://ptsteadman.github.io/images/vim1.png">
+<p>If you use the “show whitespace” Visual Studio chord <code>(CTRL-R, CTRL-W)</code>,<br>you’ll see that visual studio inserts tabs instead of spaces by<br>default for newline indent:</p>
+<img src="http://ptsteadman.github.io/images/ws.png">
+<p>Visual Studio displays tabs as having the same<br>width as four spaces.  But if you’re collaborating with someone working<br>in another text editor like vim, your automatically-inserted tabs will<br>appear larger than four spaces.</p>
+<p>Here’s how to make visual studio insert spaces instead of tabs on newline indents:<br>go to <code>Tools-&gt;Options-&gt;Text Editor-&gt;All Languages-&gt;Tabs</code>:</p>
+<img src="http://ptsteadman.github.io/images/spaces.png">
+<p>That’s better:</p>
+<img src="http://ptsteadman.github.io/images/ws2.png">
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;It’s really annoying when Visual Studio shows you this:&lt;/p&gt;
+&lt;img src=&quot;http://ptsteadman.github.io/images/vs1.png&quot;&gt;
+&lt;p&gt;But github or vim s
+    
+    </summary>
+    
+      <category term=".NET" scheme="https://minichou.github.io/categories/NET/"/>
+    
+    
+      <category term="C#" scheme="https://minichou.github.io/tags/C/"/>
+    
+      <category term="Visual Studio" scheme="https://minichou.github.io/tags/Visual-Studio/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Welcome To Hexo</title>
+    <link href="https://minichou.github.io/2014/02/23/2014-02-23-hello-world/"/>
+    <id>https://minichou.github.io/2014/02/23/2014-02-23-hello-world/</id>
+    <published>2014-02-22T16:00:00.000Z</published>
+    <updated>2017-03-24T06:17:27.714Z</updated>
+    
+    <content type="html"><![CDATA[<p>Welcome to <a href="http://hexo.io/" target="_blank" rel="external">Hexo</a>! This is your very first post. Check <a href="http://hexo.io/docs/" target="_blank" rel="external">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="http://hexo.io/docs/troubleshooting.html" target="_blank" rel="external">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="external">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo new <span class="string">"My New Post"</span></div></pre></td></tr></table></figure>
+<a id="more"></a>
+<p>More info: <a href="http://hexo.io/docs/writing.html" target="_blank" rel="external">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo server</div></pre></td></tr></table></figure>
+<p>More info: <a href="http://hexo.io/docs/server.html" target="_blank" rel="external">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo generate</div></pre></td></tr></table></figure>
+<p>More info: <a href="http://hexo.io/docs/generating.html" target="_blank" rel="external">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo deploy</div></pre></td></tr></table></figure>
+<p>More info: <a href="http://hexo.io/docs/deployment.html" target="_blank" rel="external">Deployment</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Welcome to &lt;a href=&quot;http://hexo.io/&quot;&gt;Hexo&lt;/a&gt;! This is your very first post. Check &lt;a href=&quot;http://hexo.io/docs/&quot;&gt;documentation&lt;/a&gt; for more info. If you get any problems when using Hexo, you can find the answer in &lt;a href=&quot;http://hexo.io/docs/troubleshooting.html&quot;&gt;troubleshooting&lt;/a&gt; or you can ask me on &lt;a href=&quot;https://github.com/hexojs/hexo/issues&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;Quick-Start&quot;&gt;&lt;a href=&quot;#Quick-Start&quot; class=&quot;headerlink&quot; title=&quot;Quick Start&quot;&gt;&lt;/a&gt;Quick Start&lt;/h2&gt;&lt;h3 id=&quot;Create-a-new-post&quot;&gt;&lt;a href=&quot;#Create-a-new-post&quot; class=&quot;headerlink&quot; title=&quot;Create a new post&quot;&gt;&lt;/a&gt;Create a new post&lt;/h3&gt;&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;$ hexo new &lt;span class=&quot;string&quot;&gt;&quot;My New Post&quot;&lt;/span&gt;&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+    
+    </summary>
+    
+      <category term="Hexo" scheme="https://minichou.github.io/categories/Hexo/"/>
+    
+    
+      <category term="Welcome" scheme="https://minichou.github.io/tags/Welcome/"/>
+    
+      <category term="How-To" scheme="https://minichou.github.io/tags/How-To/"/>
+    
+  </entry>
+  
+</feed>
