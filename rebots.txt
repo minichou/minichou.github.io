@@ -1,0 +1,11 @@
+# robots.txt
+User-agent: *
+Allow: /
+Allow: /archives/ 
+Disallow: /js/
+Disallow: /css/
+Disallow: /fonts/
+Disallow: /vendors/
+Disallow: /fancybox/
+Sitemap: https://minichou.github.io/sitemap.xml
+Sitemap: https://minichou.github.io/baidusitemap.xml

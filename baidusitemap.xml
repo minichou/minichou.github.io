@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+
+    
+  <url>
+    <loc>https://minichou.github.io/2017/03/27/just-a-test/</loc>
+    <lastmod>2017-03-27T14:30:00.727Z</lastmod>
+    <data>
+        <display>
+        <title>just a test</title>
+        <pubTime>2017-03-27T14:30:00.000Z</pubTime>
+        
+         
+           
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2017/03/23/Redis%20Sentinel%EF%BC%88%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%EF%BC%89%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8ASpring%E9%9B%86%E6%88%90/</loc>
+    <lastmod>2017-03-27T14:26:49.401Z</lastmod>
+    <data>
+        <display>
+        <title>Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成</title>
+        <pubTime>2017-03-23T09:42:36.000Z</pubTime>
+        
+        <tag>redis</tag>
+         
+        <tag>sentinel</tag>
+         
+        <tag>spring-data-redis</tag>
+         
+         
+           
+             
+              <breadCrumb title="redis" url="https://minichou.github.io/categories/redis/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2017/03/23/Redis%20Sentinel%E5%8E%9F%E7%90%86/</loc>
+    <lastmod>2017-03-27T14:26:36.699Z</lastmod>
+    <data>
+        <display>
+        <title>Redis Sentinel原理</title>
+        <pubTime>2017-03-23T09:49:28.000Z</pubTime>
+        
+        <tag>redis</tag>
+         
+        <tag>sentinel原理</tag>
+         
+         
+           
+             
+              <breadCrumb title="redis" url="https://minichou.github.io/categories/redis/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2016/01/02/2016-01-02-Notes-On-Creating-A-Hexo-Theme/</loc>
+    <lastmod>2017-03-27T14:12:06.941Z</lastmod>
+    <data>
+        <display>
+        <title>Notes On Creating A Hexo Theme</title>
+        <pubTime>2016-01-01T16:00:00.000Z</pubTime>
+        
+        <tag>Programming</tag>
+         
+        <tag>Design</tag>
+         
+         
+           
+             
+              <breadCrumb title="Hexo" url="https://minichou.github.io/categories/Hexo/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2015/05/02/2015-05-02-How-To-Impress/</loc>
+    <lastmod>2017-03-27T14:12:00.101Z</lastmod>
+    <data>
+        <display>
+        <title>How To Impress Employers at Infosessions</title>
+        <pubTime>2015-05-01T16:00:00.000Z</pubTime>
+        
+        <tag>funny</tag>
+         
+        <tag>employment</tag>
+         
+         
+           
+             
+              <breadCrumb title="Humor" url="https://minichou.github.io/categories/Humor/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2017/03/21/hexo%E6%B7%BB%E5%8A%A0%E6%89%93%E8%B5%8F%E5%8A%9F%E8%83%BD/</loc>
+    <lastmod>2017-03-27T14:10:47.743Z</lastmod>
+    <data>
+        <display>
+        <title>hexo添加打赏功能</title>
+        <pubTime>2017-03-21T09:39:02.000Z</pubTime>
+        
+        <tag>hexo</tag>
+         
+        <tag>打赏</tag>
+         
+         
+           
+             
+              <breadCrumb title="杂谈" url="https://minichou.github.io/categories/%E6%9D%82%E8%B0%88/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2015/04/08/2015-04-08-NAV-Programming-Resources/</loc>
+    <lastmod>2017-03-27T14:10:38.634Z</lastmod>
+    <data>
+        <display>
+        <title>NAV Web Service Programming Resources</title>
+        <pubTime>2015-04-07T16:00:00.000Z</pubTime>
+        
+        <tag>Resources</tag>
+         
+        <tag>NAV</tag>
+         
+         
+           
+             
+              <breadCrumb title="Dynamics NAV" url="https://minichou.github.io/categories/Dynamics-NAV/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2015/04/05/2015-04-05-Lookup-on-Page/</loc>
+    <lastmod>2017-03-27T14:10:28.897Z</lastmod>
+    <data>
+        <display>
+        <title>Adding Lookup Field to a Page in Dynamics NAV</title>
+        <pubTime>2015-04-04T16:00:00.000Z</pubTime>
+        
+        <tag>Resources</tag>
+         
+        <tag>NAV</tag>
+         
+         
+           
+             
+              <breadCrumb title="Dynamics NAV" url="https://minichou.github.io/categories/Dynamics-NAV/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2015/04/01/2015-04-01-NGINX-Static-Locations/</loc>
+    <lastmod>2017-03-27T14:10:17.769Z</lastmod>
+    <data>
+        <display>
+        <title>Static NGINX Locations</title>
+        <pubTime>2015-03-31T16:00:00.000Z</pubTime>
+        
+        <tag>Web Development</tag>
+         
+         
+           
+             
+              <breadCrumb title="NGINX" url="https://minichou.github.io/categories/NGINX/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2014/02/23/2014-02-23-hello-world/</loc>
+    <lastmod>2017-03-27T14:10:10.408Z</lastmod>
+    <data>
+        <display>
+        <title>Welcome To Hexo</title>
+        <pubTime>2014-02-22T16:00:00.000Z</pubTime>
+        
+        <tag>Welcome</tag>
+         
+        <tag>How-To</tag>
+         
+         
+           
+             
+              <breadCrumb title="Hexo" url="https://minichou.github.io/categories/Hexo/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+  <url>
+    <loc>https://minichou.github.io/2015/03/23/2015-03-23-Make-VS-Insert-Spaces/</loc>
+    <lastmod>2017-03-27T14:10:00.311Z</lastmod>
+    <data>
+        <display>
+        <title>Spaces for Newline Indents in VS</title>
+        <pubTime>2015-03-22T16:00:00.000Z</pubTime>
+        
+        <tag>C#</tag>
+         
+        <tag>Visual Studio</tag>
+         
+         
+           
+             
+              <breadCrumb title=".NET" url="https://minichou.github.io/categories/NET/"/>
+          
+        </display>
+    </data>
+    </url>
+
+    
+    
+    
+</urlset>

@@ -653,7 +653,7 @@ code {
   }
 }
 #profile .inner {
-  margin-top: 10px;
+  margin-top: 20px;
   background: #fff;
 }
 #profile .inner .base-info #avatar {
@@ -803,7 +803,7 @@ code {
   border-color: transparent transparent #dbdee1 transparent;
 }
 .article {
-  margin: 10px 0;
+  margin: 20px 0;
 }
 .article-inner {
   overflow: hidden;
@@ -1071,7 +1071,7 @@ a.article-title:hover {
 }
 @media screen and (min-width: 1200px) {
   #article-nav {
-    margin: 10px 0;
+    margin: 20px 0;
   }
   #article-nav:before {
     width: 8px;
@@ -1092,7 +1092,7 @@ a.article-title:hover {
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
-  margin-top: 10px;
+  margin-top: 20px;
   text-align: center;
   display: block;
 }
@@ -1416,7 +1416,7 @@ ol.toc {
 }
 #comments {
   padding: 20px;
-  margin: 10px 0;
+  margin: 20px 0;
 }
 #comments a {
   color: #38b7ea;
@@ -1437,7 +1437,7 @@ ol.toc {
 .archive-tag-wrap,
 .layout-title {
   font-size: 1.4em;
-  margin: 10px 0 20px 0;
+  margin: 20px 0 20px 0;
 }
 @media screen and (max-width: 559px) {
   .archive-year-wrap,
@@ -1603,7 +1603,7 @@ ol.toc {
   content: '#';
 }
 #page-nav {
-  margin: 10px auto;
+  margin: 20px auto;
   text-align: center;
   color: #999;
   overflow: hidden;
@@ -1812,11 +1812,11 @@ ol.toc {
   margin-right: 5px;
 }
 .widget-wrap {
-  margin: 10px 10px;
+  margin: 20px 10px;
 }
 @media screen and (max-width: 559px) {
   .widget-wrap {
-    margin: 10px 20px;
+    margin: 20px 20px;
   }
 }
 .widget-title {
@@ -1852,7 +1852,7 @@ ol.toc {
 .widget ol li,
 .widget ul .category-list-child,
 .widget ol .category-list-child {
-  padding: 10px 0;
+  padding: 6px 0;
   font-size: 14px;
   border-bottom: 1px solid border-color;
 }
