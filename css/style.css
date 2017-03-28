@@ -1270,7 +1270,7 @@ a.article-title:hover {
   float: none;
   background: #f9f9f9;
   margin: 1em -20px 1em -20px;
-  padding: 1em;
+  padding: 2em;
   border-radius: 0px;
 }
 .toc-article .toc-title {
