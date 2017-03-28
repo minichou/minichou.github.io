@@ -2,13 +2,6 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://minichou.github.io/2017/03/27/just-a-test/</loc>
-    
-    <lastmod>2017-03-27T14:30:00.727Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://minichou.github.io/2017/03/23/Redis%20Sentinel%EF%BC%88%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%EF%BC%89%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8ASpring%E9%9B%86%E6%88%90/</loc>
     
     <lastmod>2017-03-27T14:26:49.401Z</lastmod>
@@ -23,58 +16,9 @@
   </url>
   
   <url>
-    <loc>https://minichou.github.io/2016/01/02/2016-01-02-Notes-On-Creating-A-Hexo-Theme/</loc>
-    
-    <lastmod>2017-03-27T14:12:06.941Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://minichou.github.io/2015/05/02/2015-05-02-How-To-Impress/</loc>
-    
-    <lastmod>2017-03-27T14:12:00.101Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://minichou.github.io/2017/03/21/hexo%E6%B7%BB%E5%8A%A0%E6%89%93%E8%B5%8F%E5%8A%9F%E8%83%BD/</loc>
     
     <lastmod>2017-03-27T14:10:47.743Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://minichou.github.io/2015/04/08/2015-04-08-NAV-Programming-Resources/</loc>
-    
-    <lastmod>2017-03-27T14:10:38.634Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://minichou.github.io/2015/04/05/2015-04-05-Lookup-on-Page/</loc>
-    
-    <lastmod>2017-03-27T14:10:28.897Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://minichou.github.io/2015/04/01/2015-04-01-NGINX-Static-Locations/</loc>
-    
-    <lastmod>2017-03-27T14:10:17.769Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://minichou.github.io/2014/02/23/2014-02-23-hello-world/</loc>
-    
-    <lastmod>2017-03-27T14:10:10.408Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://minichou.github.io/2015/03/23/2015-03-23-Make-VS-Insert-Spaces/</loc>
-    
-    <lastmod>2017-03-27T14:10:00.311Z</lastmod>
     
   </url>
   
