@@ -256,18 +256,18 @@
     <link href="https://minichou.github.io/2016/03/23/Redis%20Sentinel%EF%BC%88%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%EF%BC%89%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8ASpring%E9%9B%86%E6%88%90/"/>
     <id>https://minichou.github.io/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/</id>
     <published>2016-03-23T09:42:36.000Z</published>
-    <updated>2017-03-29T07:33:19.472Z</updated>
+    <updated>2017-03-29T08:18:53.892Z</updated>
     
     <content type="html"><![CDATA[<blockquote>
 <p>本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。</p>
 </blockquote>
-<h2 id="一、Sentinel介绍"><a href="#一、Sentinel介绍" class="headerlink" title="一、Sentinel介绍"></a>一、Sentinel介绍</h2><p>Sentinel是Redis的高可用性（HA）解决方案，由一个或多个Sentinel实例组成的Sentinel系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器故障时，自动将下线主服务器属下的某个从服务器升级为新的主服务器，然后由新的主服务器代替已下线的主服务器继续处理命令请求。Redis提供的sentinel（哨兵）机制，通过sentinel模式启动redis后，自动监控master/slave的运行状态，<strong>基本原理是：心跳机制+投票裁决</strong></p>
+<h2 id="一、Sentinel介绍"><a href="#一、Sentinel介绍" class="headerlink" title="一、Sentinel介绍"></a>一、Sentinel介绍</h2><p>Sentinel是Redis的高可用性（HA）解决方案，由一个或多个Sentinel实例组成的Sentinel系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器故障时，自动将下线主服务器属下的某个从服务器升级为新的主服务器，然后由新的主服务器代替已下线的主服务器继续处理命令请求。Redis提供的sentinel（哨兵）机制，通过sentinel模式启动redis后，自动监控master/slave的运行状态，<strong>基本原理是：心跳机制+投票裁决</strong><br><a id="more"></a></p>
 <ul>
 <li>监控（Monitoring）： Sentinel 会不断地检查你的主服务器和从服务器是否运作正常。</li>
 <li>提醒（Notification）： 当被监控的某个 Redis 服务器出现问题时， Sentinel 可以通过 API向管理员或者其他应用程序发送通知。</li>
-<li>自动故障迁移（Automatic failover）： 当一个主服务器不能正常工作时， Sentinel 会开始一次自动故障迁移操作， 它会将失效主服务器的其中一个从服务器选举出来，升级为新的主服务器， 并让失效主服务器的其他从服务器改为复制新的主服务器； 当客户端试图连接失效的主服务器时， 集群也会向客户端返回新主服务器的地址， 使得集群可以使用新主服务器代替失效服务器。<a id="more"></a>
-<h2 id="二、Sentinel的主从原理"><a href="#二、Sentinel的主从原理" class="headerlink" title="二、Sentinel的主从原理"></a>二、Sentinel的主从原理</h2>以下为Sentinel架构以及主从切换图：</li>
+<li>自动故障迁移（Automatic failover）： 当一个主服务器不能正常工作时， Sentinel 会开始一次自动故障迁移操作， 它会将失效主服务器的其中一个从服务器选举出来，升级为新的主服务器， 并让失效主服务器的其他从服务器改为复制新的主服务器； 当客户端试图连接失效的主服务器时， 集群也会向客户端返回新主服务器的地址， 使得集群可以使用新主服务器代替失效服务器。</li>
 </ul>
+<h2 id="二、Sentinel的主从原理"><a href="#二、Sentinel的主从原理" class="headerlink" title="二、Sentinel的主从原理"></a>二、Sentinel的主从原理</h2><p>以下为Sentinel架构以及主从切换图：</p>
 <p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/1417705-file_1490244393480_232c.png" alt=""></p>
 <p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/63944901-file_1490244479018_b31b.png" alt=""></p>
 <p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/51631728-file_1490244543432_6e50.png" alt=""></p>
@@ -332,11 +332,7 @@
       &lt;blockquote&gt;
 &lt;p&gt;本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h2 id=&quot;一、Sentinel介绍&quot;&gt;&lt;a href=&quot;#一、Sentinel介绍&quot; class=&quot;headerlink&quot; title=&quot;一、Sentinel介绍&quot;&gt;&lt;/a&gt;一、Sentinel介绍&lt;/h2&gt;&lt;p&gt;Sentinel是Redis的高可用性（HA）解决方案，由一个或多个Sentinel实例组成的Sentinel系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器故障时，自动将下线主服务器属下的某个从服务器升级为新的主服务器，然后由新的主服务器代替已下线的主服务器继续处理命令请求。Redis提供的sentinel（哨兵）机制，通过sentinel模式启动redis后，自动监控master/slave的运行状态，&lt;strong&gt;基本原理是：心跳机制+投票裁决&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;监控（Monitoring）： Sentinel 会不断地检查你的主服务器和从服务器是否运作正常。&lt;/li&gt;
-&lt;li&gt;提醒（Notification）： 当被监控的某个 Redis 服务器出现问题时， Sentinel 可以通过 API向管理员或者其他应用程序发送通知。&lt;/li&gt;
-&lt;li&gt;自动故障迁移（Automatic failover）： 当一个主服务器不能正常工作时， Sentinel 会开始一次自动故障迁移操作， 它会将失效主服务器的其中一个从服务器选举出来，升级为新的主服务器， 并让失效主服务器的其他从服务器改为复制新的主服务器； 当客户端试图连接失效的主服务器时， 集群也会向客户端返回新主服务器的地址， 使得集群可以使用新主服务器代替失效服务器。
+&lt;h2 id=&quot;一、Sentinel介绍&quot;&gt;&lt;a href=&quot;#一、Sentinel介绍&quot; class=&quot;headerlink&quot; title=&quot;一、Sentinel介绍&quot;&gt;&lt;/a&gt;一、Sentinel介绍&lt;/h2&gt;&lt;p&gt;Sentinel是Redis的高可用性（HA）解决方案，由一个或多个Sentinel实例组成的Sentinel系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器故障时，自动将下线主服务器属下的某个从服务器升级为新的主服务器，然后由新的主服务器代替已下线的主服务器继续处理命令请求。Redis提供的sentinel（哨兵）机制，通过sentinel模式启动redis后，自动监控master/slave的运行状态，&lt;strong&gt;基本原理是：心跳机制+投票裁决&lt;/strong&gt;&lt;br&gt;
     
     </summary>
     
