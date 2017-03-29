@@ -55,6 +55,83 @@
   </entry>
   
   <entry>
+    <title>缓存穿透及雪崩之常见解决方案</title>
+    <link href="https://minichou.github.io/2016/04/20/%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F%E5%8F%8A%E9%9B%AA%E5%B4%A9%E4%B9%8B%E5%B8%B8%E8%A7%81%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
+    <id>https://minichou.github.io/2016/04/20/缓存穿透及雪崩之常见解决方案/</id>
+    <published>2016-04-20T07:33:49.000Z</published>
+    <updated>2017-03-29T07:49:42.914Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h1><h2 id="什么叫缓存穿透"><a href="#什么叫缓存穿透" class="headerlink" title="什么叫缓存穿透"></a>什么叫缓存穿透</h2><p><strong>缓存穿透</strong>：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。<br><a id="more"></a></p>
+<h2 id="如何避免缓存穿透"><a href="#如何避免缓存穿透" class="headerlink" title="如何避免缓存穿透"></a>如何避免缓存穿透</h2><p>造成缓存穿透根本原因：空查询。前端系统不知道所查数据到底存不存在，导致不必要查询。造成空查询的原因主要有两个：</p>
+<ul>
+<li>代码设计或数据出现问题</li>
+<li>恶意攻击</li>
+</ul>
+<p>如何解决空查询呢？<br>避免查库有两个条件：</p>
+<ol>
+<li>缓存命中，则不需要查库</li>
+<li>事先知道库中不存在，则不需要查库</li>
+</ol>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>针对第一个条件</p>
+<ol>
+<li>缓存空值</li>
+</ol>
+<p>如果查询数据库不存在，我们之前的操作就不会进行缓存，这里我们仍然缓存空对象<br>。之后再访问这个数据将会从缓存中获取，保护了后端数据源。<br>缓存空对象会有两个问题：</p>
+<ul>
+<li>空值做了缓存，意味着缓存层中存了更多的键，需要更多的内存空间 ( 如果是攻击，问题更严重 )，比较有效的方法是针对这类数据设置一个较短的过期时间，让其自动剔除。</li>
+<li>缓存层和存储层的数据会有一段时间窗口的不一致，可能会对业务有一定影响。例如过期时间设置为 5 分钟，如果此时存储层添加了这个数据，那此段时间就会出现缓存层和存储层数据的不一致，此时可以利用消息系统或者其他方式清除掉缓存层中的空对象。</li>
+</ul>
+<p><strong>注意</strong>：采用缓存空值策略，只能避免第二次空查询，第一次还是会进行查库操作。</p>
+<p>针对第二个条件</p>
+<ol>
+<li>bloom filter（布隆过滤器）</li>
+</ol>
+<p>根据存储层数据构建布隆过滤器，在进行查询操作之前先通过bloom filter判断是否存在，如果存在则继续查询操作，不存在，则直接返回，避免空查询。<br>采用布隆过滤器可能会存在以下问题：</p>
+<ul>
+<li>占用部分内存空间，因为要将数据库中的数据全量构造出一个bitmap</li>
+<li>存在误判的情况，比如某个key对应的数据其实不存在，但通过bloomfilter判断结果可能存在，这时只需进行一次查库操作，毕竟这种误判率比较低。</li>
+<li>无法删除：即使数据库中删除该数据，也无法将其从bloomfilter中删除，只能重新构建。</li>
+</ul>
+<p>使用场景：缓存命中率不高，如下场景：</p>
+<ol>
+<li>电商客户咨询场景：系统查询最近咨询客服分配给改客户，如无，则随机分配，且这里客户-&gt;最近咨询客服对应信息只存储7天。这类场景缓存命中率不高。</li>
+<li>电商商品推荐场景：针对老用户，系统根据用户购买记录进行商品推荐，新用户则没有。用户登录网站系统查询是否存在推荐数据场景，命中率不高。</li>
+</ol>
+<h1 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h1><h2 id="什么叫缓存雪崩"><a href="#什么叫缓存雪崩" class="headerlink" title="什么叫缓存雪崩"></a>什么叫缓存雪崩</h2><p><strong>缓存雪崩</strong>: 简而言之就是缓存不可用或失效，导致所有的查询操作都落到后端存储系统，对后端存储系统造成很大压力，严重时可能会冲垮存储系统，产生连锁反应，最终导致服务不可用。</p>
+<h2 id="如何防止雪崩发生"><a href="#如何防止雪崩发生" class="headerlink" title="如何防止雪崩发生"></a>如何防止雪崩发生</h2><p>要避免缓存雪崩，首先要清楚雪崩产生的根本原因：所有缓存在同一个时间段同时失效或不可用，导致同一时间所有查询操作都落到存储层。<br>避免过多查库请求有两个条件：</p>
+<ol>
+<li>不要让缓存在同一时间段失效即始终有部分缓存可能</li>
+<li>控制查库请求，只允许少量查库操作</li>
+</ol>
+<h2 id="解决方案-1"><a href="#解决方案-1" class="headerlink" title="解决方案"></a>解决方案</h2><p>针对以上两个条件在业务代码层面可采取以下策略：</p>
+<ul>
+<li>针对不同key设置不同失效时间，尽量将失效时间打散，不要聚集在一个时间段</li>
+<li>采取二级缓存策略：同一个数据，缓存两次，分别设置不同的失效时间，这样即使其中一个缓存失效，另一个仍然可用，注意：数据更新时要同时处理两个缓存。</li>
+<li>采用加锁或队列控制查库线程数。在缓存失效后，控制真正查库线程数。让一部分线程去查库，获取之后，存入缓存，后续查询直接从缓存获取。</li>
+<li>缓存预加载。在系统提供服务之前进行热点key缓存预加载，不至于系统启动之初，由于缓存还没存放，导致所有请求达到后端系统。</li>
+<li>缓存永不过期即不设置过期时间：不建议使用，1.造成数据不一致，2.浪费存储空间，可能会造成内存溢出。</li>
+</ul>
+<p>在缓存系统架构层面，则尽量采用集群多副本方式保证缓存服务高可用，如redis可采用Redis Sentinel或者Redis Cluster保证缓存服务高可用。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;缓存穿透&quot;&gt;&lt;a href=&quot;#缓存穿透&quot; class=&quot;headerlink&quot; title=&quot;缓存穿透&quot;&gt;&lt;/a&gt;缓存穿透&lt;/h1&gt;&lt;h2 id=&quot;什么叫缓存穿透&quot;&gt;&lt;a href=&quot;#什么叫缓存穿透&quot; class=&quot;headerlink&quot; title=&quot;什么叫缓存穿透&quot;&gt;&lt;/a&gt;什么叫缓存穿透&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;缓存穿透&lt;/strong&gt;：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。&lt;br&gt;
+    
+    </summary>
+    
+      <category term="redis" scheme="https://minichou.github.io/categories/redis/"/>
+    
+    
+      <category term="redis" scheme="https://minichou.github.io/tags/redis/"/>
+    
+      <category term="缓存穿透" scheme="https://minichou.github.io/tags/%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F/"/>
+    
+      <category term="缓存雪崩" scheme="https://minichou.github.io/tags/%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Redis Sentinel原理</title>
     <link href="https://minichou.github.io/2016/03/25/Redis%20Sentinel%E5%8E%9F%E7%90%86/"/>
     <id>https://minichou.github.io/2016/03/25/Redis Sentinel原理/</id>
@@ -179,16 +256,17 @@
     <link href="https://minichou.github.io/2016/03/23/Redis%20Sentinel%EF%BC%88%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%EF%BC%89%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8ASpring%E9%9B%86%E6%88%90/"/>
     <id>https://minichou.github.io/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/</id>
     <published>2016-03-23T09:42:36.000Z</published>
-    <updated>2017-03-29T02:05:46.688Z</updated>
+    <updated>2017-03-29T07:33:19.472Z</updated>
     
     <content type="html"><![CDATA[<blockquote>
-<p>本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。<br><a id="more"></a></p>
+<p>本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。</p>
 </blockquote>
 <h2 id="一、Sentinel介绍"><a href="#一、Sentinel介绍" class="headerlink" title="一、Sentinel介绍"></a>一、Sentinel介绍</h2><p>Sentinel是Redis的高可用性（HA）解决方案，由一个或多个Sentinel实例组成的Sentinel系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器故障时，自动将下线主服务器属下的某个从服务器升级为新的主服务器，然后由新的主服务器代替已下线的主服务器继续处理命令请求。Redis提供的sentinel（哨兵）机制，通过sentinel模式启动redis后，自动监控master/slave的运行状态，<strong>基本原理是：心跳机制+投票裁决</strong></p>
 <ul>
 <li>监控（Monitoring）： Sentinel 会不断地检查你的主服务器和从服务器是否运作正常。</li>
 <li>提醒（Notification）： 当被监控的某个 Redis 服务器出现问题时， Sentinel 可以通过 API向管理员或者其他应用程序发送通知。</li>
-<li>自动故障迁移（Automatic failover）： 当一个主服务器不能正常工作时， Sentinel 会开始一次自动故障迁移操作， 它会将失效主服务器的其中一个从服务器选举出来，升级为新的主服务器， 并让失效主服务器的其他从服务器改为复制新的主服务器； 当客户端试图连接失效的主服务器时， 集群也会向客户端返回新主服务器的地址， 使得集群可以使用新主服务器代替失效服务器。<h2 id="二、Sentinel的主从原理"><a href="#二、Sentinel的主从原理" class="headerlink" title="二、Sentinel的主从原理"></a>二、Sentinel的主从原理</h2>以下为Sentinel架构以及主从切换图：</li>
+<li>自动故障迁移（Automatic failover）： 当一个主服务器不能正常工作时， Sentinel 会开始一次自动故障迁移操作， 它会将失效主服务器的其中一个从服务器选举出来，升级为新的主服务器， 并让失效主服务器的其他从服务器改为复制新的主服务器； 当客户端试图连接失效的主服务器时， 集群也会向客户端返回新主服务器的地址， 使得集群可以使用新主服务器代替失效服务器。<a id="more"></a>
+<h2 id="二、Sentinel的主从原理"><a href="#二、Sentinel的主从原理" class="headerlink" title="二、Sentinel的主从原理"></a>二、Sentinel的主从原理</h2>以下为Sentinel架构以及主从切换图：</li>
 </ul>
 <p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/1417705-file_1490244393480_232c.png" alt=""></p>
 <p><img src="http://on8y4ksa8.bkt.clouddn.com/17-3-23/63944901-file_1490244479018_b31b.png" alt=""></p>
@@ -252,7 +330,13 @@
     <summary type="html">
     
       &lt;blockquote&gt;
-&lt;p&gt;本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。&lt;br&gt;
+&lt;p&gt;本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;一、Sentinel介绍&quot;&gt;&lt;a href=&quot;#一、Sentinel介绍&quot; class=&quot;headerlink&quot; title=&quot;一、Sentinel介绍&quot;&gt;&lt;/a&gt;一、Sentinel介绍&lt;/h2&gt;&lt;p&gt;Sentinel是Redis的高可用性（HA）解决方案，由一个或多个Sentinel实例组成的Sentinel系统可以监视任意多个主服务器，以及这些主服务器属下的所有从服务器，并在被监视的主服务器故障时，自动将下线主服务器属下的某个从服务器升级为新的主服务器，然后由新的主服务器代替已下线的主服务器继续处理命令请求。Redis提供的sentinel（哨兵）机制，通过sentinel模式启动redis后，自动监控master/slave的运行状态，&lt;strong&gt;基本原理是：心跳机制+投票裁决&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;监控（Monitoring）： Sentinel 会不断地检查你的主服务器和从服务器是否运作正常。&lt;/li&gt;
+&lt;li&gt;提醒（Notification）： 当被监控的某个 Redis 服务器出现问题时， Sentinel 可以通过 API向管理员或者其他应用程序发送通知。&lt;/li&gt;
+&lt;li&gt;自动故障迁移（Automatic failover）： 当一个主服务器不能正常工作时， Sentinel 会开始一次自动故障迁移操作， 它会将失效主服务器的其中一个从服务器选举出来，升级为新的主服务器， 并让失效主服务器的其他从服务器改为复制新的主服务器； 当客户端试图连接失效的主服务器时， 集群也会向客户端返回新主服务器的地址， 使得集群可以使用新主服务器代替失效服务器。
     
     </summary>
     
