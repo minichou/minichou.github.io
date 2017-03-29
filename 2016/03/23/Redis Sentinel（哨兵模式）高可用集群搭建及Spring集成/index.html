@@ -10,14 +10,14 @@
     <meta name="description" content="本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成">
-<meta property="og:url" content="https://minichou.github.io/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/index.html">
+<meta property="og:url" content="https://minichou.github.io/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/index.html">
 <meta property="og:site_name" content="迷途小码农">
 <meta property="og:description" content="本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。">
 <meta property="og:image" content="http://on8y4ksa8.bkt.clouddn.com/17-3-23/1417705-file_1490244393480_232c.png">
 <meta property="og:image" content="http://on8y4ksa8.bkt.clouddn.com/17-3-23/63944901-file_1490244479018_b31b.png">
 <meta property="og:image" content="http://on8y4ksa8.bkt.clouddn.com/17-3-23/51631728-file_1490244543432_6e50.png">
 <meta property="og:image" content="http://on8y4ksa8.bkt.clouddn.com/17-3-23/71163166-file_1490244585501_5e72.png">
-<meta property="og:updated_time" content="2017-03-28T10:21:51.778Z">
+<meta property="og:updated_time" content="2017-03-29T02:05:46.688Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成">
 <meta name="twitter:description" content="本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。">
@@ -225,8 +225,8 @@
                         
     <div class="article-date">
         <i class="fa fa-calendar"></i>
-        <a href="/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/">
-            <time datetime="2017-03-23T09:42:36.000Z" itemprop="datePublished">2017-03-23</time>
+        <a href="/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/">
+            <time datetime="2016-03-23T09:42:36.000Z" itemprop="datePublished">2016-03-23</time>
         </a>
     </div>
 
@@ -394,7 +394,7 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
 
             
     
-        <a href="https://minichou.github.io/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/#comments" class="article-comment-link ds-thread-count" data-thread-key="https://minichou.github.io/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/">评论</a>
+        <a href="https://minichou.github.io/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/#comments" class="article-comment-link ds-thread-count" data-thread-key="https://minichou.github.io/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/">评论</a>
     
 
         </footer>
@@ -403,7 +403,7 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
         
 <nav id="article-nav">
     
-        <a href="/2017/03/23/Redis Sentinel原理/" id="article-nav-newer" class="article-nav-link-wrap">
+        <a href="/2016/03/25/Redis Sentinel原理/" id="article-nav-newer" class="article-nav-link-wrap">
             <strong class="article-nav-caption">上一篇</strong>
             <div class="article-nav-title">
                 
@@ -429,7 +429,7 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
     <section id="comments">
     
         
-    <div class="ds-thread" data-thread-key="2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/" data-title="Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成" data-url="https://minichou.github.io/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/"></div>
+    <div class="ds-thread" data-thread-key="2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/" data-title="Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成" data-url="https://minichou.github.io/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/"></div>
     <style>
         #ds-thread #ds-reset .ds-textarea-wrapper {
             background: none;
@@ -484,7 +484,7 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
                     <li>
                         
                         <div class="item-thumbnail">
-                            <a href="/2017/03/23/Redis Sentinel原理/" class="thumbnail">
+                            <a href="/2016/03/25/Redis Sentinel原理/" class="thumbnail">
     
     
         <span class="thumbnail-image thumbnail-none"></span>
@@ -495,15 +495,15 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
                         
                         <div class="item-inner">
                             <p class="item-category"><a class="article-category-link" href="/categories/redis/">redis</a></p>
-                            <p class="item-title"><a href="/2017/03/23/Redis Sentinel原理/" class="title">Redis Sentinel原理</a></p>
-                            <p class="item-date"><time datetime="2017-03-23T09:49:28.000Z" itemprop="datePublished">2017-03-23</time></p>
+                            <p class="item-title"><a href="/2016/03/25/Redis Sentinel原理/" class="title">Redis Sentinel原理</a></p>
+                            <p class="item-date"><time datetime="2016-03-25T09:49:28.000Z" itemprop="datePublished">2016-03-25</time></p>
                         </div>
                     </li>
                 
                     <li>
                         
                         <div class="item-thumbnail">
-                            <a href="/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/" class="thumbnail">
+                            <a href="/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/" class="thumbnail">
     
     
         <span class="thumbnail-image thumbnail-none"></span>
@@ -514,8 +514,8 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
                         
                         <div class="item-inner">
                             <p class="item-category"><a class="article-category-link" href="/categories/redis/">redis</a></p>
-                            <p class="item-title"><a href="/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/" class="title">Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成</a></p>
-                            <p class="item-date"><time datetime="2017-03-23T09:42:36.000Z" itemprop="datePublished">2017-03-23</time></p>
+                            <p class="item-title"><a href="/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/" class="title">Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成</a></p>
+                            <p class="item-date"><time datetime="2016-03-23T09:42:36.000Z" itemprop="datePublished">2016-03-23</time></p>
                         </div>
                     </li>
                 
@@ -556,7 +556,7 @@ window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdMin
     <div class="widget-wrap">
         <h3 class="widget-title">归档</h3>
         <div class="widget">
-            <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/03/">三月 2017</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/09/">九月 2015</a><span class="archive-list-count">1</span></li></ul>
+            <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">三月 2016</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/09/">九月 2015</a><span class="archive-list-count">1</span></li></ul>
         </div>
     </div>
 

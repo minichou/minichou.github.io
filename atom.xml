@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://minichou.github.io/"/>
-  <updated>2017-03-27T14:26:36.699Z</updated>
+  <updated>2017-03-29T02:06:24.685Z</updated>
   <id>https://minichou.github.io/</id>
   
   <author>
@@ -17,10 +17,10 @@
   
   <entry>
     <title>Redis Sentinel原理</title>
-    <link href="https://minichou.github.io/2017/03/23/Redis%20Sentinel%E5%8E%9F%E7%90%86/"/>
-    <id>https://minichou.github.io/2017/03/23/Redis Sentinel原理/</id>
-    <published>2017-03-23T09:49:28.000Z</published>
-    <updated>2017-03-27T14:26:36.699Z</updated>
+    <link href="https://minichou.github.io/2016/03/25/Redis%20Sentinel%E5%8E%9F%E7%90%86/"/>
+    <id>https://minichou.github.io/2016/03/25/Redis Sentinel原理/</id>
+    <published>2016-03-25T09:49:28.000Z</published>
+    <updated>2017-03-29T02:06:24.685Z</updated>
     
     <content type="html"><![CDATA[<blockquote>
 <p>本文将主要分析redis sentinel模式中sentinel（哨兵）所起作用</p>
@@ -137,10 +137,10 @@
   
   <entry>
     <title>Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成</title>
-    <link href="https://minichou.github.io/2017/03/23/Redis%20Sentinel%EF%BC%88%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%EF%BC%89%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8ASpring%E9%9B%86%E6%88%90/"/>
-    <id>https://minichou.github.io/2017/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/</id>
-    <published>2017-03-23T09:42:36.000Z</published>
-    <updated>2017-03-28T10:21:51.778Z</updated>
+    <link href="https://minichou.github.io/2016/03/23/Redis%20Sentinel%EF%BC%88%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F%EF%BC%89%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%8F%8ASpring%E9%9B%86%E6%88%90/"/>
+    <id>https://minichou.github.io/2016/03/23/Redis Sentinel（哨兵模式）高可用集群搭建及Spring集成/</id>
+    <published>2016-03-23T09:42:36.000Z</published>
+    <updated>2017-03-29T02:05:46.688Z</updated>
     
     <content type="html"><![CDATA[<blockquote>
 <p>本文将介绍如何通过Sentinel实现Redis集群(主从)的高可用方案，该方案需要使用Jedis2.2.2及以上版本（强制），Redis2.8及以上版本(可选，Sentinel最早出现在Redis2.4中，Redis2.8中Sentinel更加稳定)，同时将redis与spring-date-redis集成。<br><a id="more"></a></p>
