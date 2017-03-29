@@ -59,10 +59,10 @@
     <link href="https://minichou.github.io/2016/04/20/%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F%E5%8F%8A%E9%9B%AA%E5%B4%A9%E4%B9%8B%E5%B8%B8%E8%A7%81%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"/>
     <id>https://minichou.github.io/2016/04/20/缓存穿透及雪崩之常见解决方案/</id>
     <published>2016-04-20T07:33:49.000Z</published>
-    <updated>2017-03-29T07:49:42.914Z</updated>
+    <updated>2017-03-29T08:14:11.768Z</updated>
     
-    <content type="html"><![CDATA[<h1 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h1><h2 id="什么叫缓存穿透"><a href="#什么叫缓存穿透" class="headerlink" title="什么叫缓存穿透"></a>什么叫缓存穿透</h2><p><strong>缓存穿透</strong>：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。<br><a id="more"></a></p>
-<h2 id="如何避免缓存穿透"><a href="#如何避免缓存穿透" class="headerlink" title="如何避免缓存穿透"></a>如何避免缓存穿透</h2><p>造成缓存穿透根本原因：空查询。前端系统不知道所查数据到底存不存在，导致不必要查询。造成空查询的原因主要有两个：</p>
+    <content type="html"><![CDATA[<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><h3 id="什么叫缓存穿透"><a href="#什么叫缓存穿透" class="headerlink" title="什么叫缓存穿透"></a>什么叫缓存穿透</h3><p><strong>缓存穿透</strong>：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。<br><a id="more"></a></p>
+<h3 id="如何避免缓存穿透"><a href="#如何避免缓存穿透" class="headerlink" title="如何避免缓存穿透"></a>如何避免缓存穿透</h3><p>造成缓存穿透根本原因：空查询。前端系统不知道所查数据到底存不存在，导致不必要查询。造成空查询的原因主要有两个：</p>
 <ul>
 <li>代码设计或数据出现问题</li>
 <li>恶意攻击</li>
@@ -72,7 +72,7 @@
 <li>缓存命中，则不需要查库</li>
 <li>事先知道库中不存在，则不需要查库</li>
 </ol>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>针对第一个条件</p>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><p>针对第一个条件</p>
 <ol>
 <li>缓存空值</li>
 </ol>
@@ -97,13 +97,13 @@
 <li>电商客户咨询场景：系统查询最近咨询客服分配给改客户，如无，则随机分配，且这里客户-&gt;最近咨询客服对应信息只存储7天。这类场景缓存命中率不高。</li>
 <li>电商商品推荐场景：针对老用户，系统根据用户购买记录进行商品推荐，新用户则没有。用户登录网站系统查询是否存在推荐数据场景，命中率不高。</li>
 </ol>
-<h1 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h1><h2 id="什么叫缓存雪崩"><a href="#什么叫缓存雪崩" class="headerlink" title="什么叫缓存雪崩"></a>什么叫缓存雪崩</h2><p><strong>缓存雪崩</strong>: 简而言之就是缓存不可用或失效，导致所有的查询操作都落到后端存储系统，对后端存储系统造成很大压力，严重时可能会冲垮存储系统，产生连锁反应，最终导致服务不可用。</p>
-<h2 id="如何防止雪崩发生"><a href="#如何防止雪崩发生" class="headerlink" title="如何防止雪崩发生"></a>如何防止雪崩发生</h2><p>要避免缓存雪崩，首先要清楚雪崩产生的根本原因：所有缓存在同一个时间段同时失效或不可用，导致同一时间所有查询操作都落到存储层。<br>避免过多查库请求有两个条件：</p>
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><h3 id="什么叫缓存雪崩"><a href="#什么叫缓存雪崩" class="headerlink" title="什么叫缓存雪崩"></a>什么叫缓存雪崩</h3><p><strong>缓存雪崩</strong>: 简而言之就是缓存不可用或失效，导致所有的查询操作都落到后端存储系统，对后端存储系统造成很大压力，严重时可能会冲垮存储系统，产生连锁反应，最终导致服务不可用。</p>
+<h3 id="如何防止雪崩发生"><a href="#如何防止雪崩发生" class="headerlink" title="如何防止雪崩发生"></a>如何防止雪崩发生</h3><p>要避免缓存雪崩，首先要清楚雪崩产生的根本原因：所有缓存在同一个时间段同时失效或不可用，导致同一时间所有查询操作都落到存储层。<br>避免过多查库请求有两个条件：</p>
 <ol>
 <li>不要让缓存在同一时间段失效即始终有部分缓存可能</li>
 <li>控制查库请求，只允许少量查库操作</li>
 </ol>
-<h2 id="解决方案-1"><a href="#解决方案-1" class="headerlink" title="解决方案"></a>解决方案</h2><p>针对以上两个条件在业务代码层面可采取以下策略：</p>
+<h3 id="解决方案-1"><a href="#解决方案-1" class="headerlink" title="解决方案"></a>解决方案</h3><p>针对以上两个条件在业务代码层面可采取以下策略：</p>
 <ul>
 <li>针对不同key设置不同失效时间，尽量将失效时间打散，不要聚集在一个时间段</li>
 <li>采取二级缓存策略：同一个数据，缓存两次，分别设置不同的失效时间，这样即使其中一个缓存失效，另一个仍然可用，注意：数据更新时要同时处理两个缓存。</li>
@@ -116,7 +116,7 @@
     
     <summary type="html">
     
-      &lt;h1 id=&quot;缓存穿透&quot;&gt;&lt;a href=&quot;#缓存穿透&quot; class=&quot;headerlink&quot; title=&quot;缓存穿透&quot;&gt;&lt;/a&gt;缓存穿透&lt;/h1&gt;&lt;h2 id=&quot;什么叫缓存穿透&quot;&gt;&lt;a href=&quot;#什么叫缓存穿透&quot; class=&quot;headerlink&quot; title=&quot;什么叫缓存穿透&quot;&gt;&lt;/a&gt;什么叫缓存穿透&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;缓存穿透&lt;/strong&gt;：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。&lt;br&gt;
+      &lt;h2 id=&quot;缓存穿透&quot;&gt;&lt;a href=&quot;#缓存穿透&quot; class=&quot;headerlink&quot; title=&quot;缓存穿透&quot;&gt;&lt;/a&gt;缓存穿透&lt;/h2&gt;&lt;h3 id=&quot;什么叫缓存穿透&quot;&gt;&lt;a href=&quot;#什么叫缓存穿透&quot; class=&quot;headerlink&quot; title=&quot;什么叫缓存穿透&quot;&gt;&lt;/a&gt;什么叫缓存穿透&lt;/h3&gt;&lt;p&gt;&lt;strong&gt;缓存穿透&lt;/strong&gt;：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。&lt;br&gt;
     
     </summary>
     
