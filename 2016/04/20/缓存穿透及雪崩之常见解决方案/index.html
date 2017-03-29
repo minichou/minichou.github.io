@@ -8,17 +8,20 @@
     <title>缓存穿透及雪崩之常见解决方案 | 迷途小码农</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
     <meta name="description" content="缓存作为应对高并发大流量的神兵利器，如果使用不当，可能会给系统造成致命一击。
+
 缓存穿透什么叫缓存穿透缓存穿透：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="缓存穿透及雪崩之常见解决方案">
 <meta property="og:url" content="https://minichou.github.io/2016/04/20/缓存穿透及雪崩之常见解决方案/index.html">
 <meta property="og:site_name" content="迷途小码农">
 <meta property="og:description" content="缓存作为应对高并发大流量的神兵利器，如果使用不当，可能会给系统造成致命一击。
+
 缓存穿透什么叫缓存穿透缓存穿透：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。">
-<meta property="og:updated_time" content="2017-03-29T08:26:38.171Z">
+<meta property="og:updated_time" content="2017-03-29T08:28:48.053Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="缓存穿透及雪崩之常见解决方案">
 <meta name="twitter:description" content="缓存作为应对高并发大流量的神兵利器，如果使用不当，可能会给系统造成致命一击。
+
 缓存穿透什么叫缓存穿透缓存穿透：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。">
     
 
@@ -256,13 +259,13 @@
             
             <blockquote>
 <p>缓存作为应对高并发大流量的神兵利器，如果使用不当，可能会给系统造成致命一击。</p>
+</blockquote>
 <h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><h3 id="什么叫缓存穿透"><a href="#什么叫缓存穿透" class="headerlink" title="什么叫缓存穿透"></a>什么叫缓存穿透</h3><p><strong>缓存穿透</strong>：简而言之就是查询缓存系统和后端系统都不存在的数据。如果这类查询并发量很大，将会对后端存储系统造成很大压力。<br><a id="more"></a></p>
 <h3 id="如何避免缓存穿透"><a href="#如何避免缓存穿透" class="headerlink" title="如何避免缓存穿透"></a>如何避免缓存穿透</h3><p>造成缓存穿透根本原因：空查询。前端系统不知道所查数据到底存不存在，导致不必要查询。造成空查询的原因主要有两个：</p>
 <ul>
 <li>代码设计或数据出现问题</li>
 <li>恶意攻击</li>
 </ul>
-</blockquote>
 <p>如何解决空查询呢？<br>避免查库有两个条件：</p>
 <ol>
 <li>缓存命中，则不需要查库</li>
