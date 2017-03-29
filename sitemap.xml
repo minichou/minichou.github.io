@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://minichou.github.io/2016/04/29/Hexo-icarus%E4%B8%BB%E9%A2%98%E5%B0%8F%E5%8A%9F%E8%83%BD%E8%AE%BE%E7%BD%AE/</loc>
+    
+    <lastmod>2017-03-29T03:07:58.671Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://minichou.github.io/2016/03/25/Redis%20Sentinel%E5%8E%9F%E7%90%86/</loc>
     
     <lastmod>2017-03-29T02:06:24.685Z</lastmod>
