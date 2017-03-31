@@ -346,6 +346,8 @@ code {
 #header {
   background: #fff;
   position: relative;
+  -webkit-box-shadow: 0px 2px 5px #ddd;
+  box-shadow: 0px 2px 5px #ddd;
 }
 #header a,
 #header a:visited {
@@ -655,6 +657,9 @@ code {
 #profile .inner {
   margin-top: 20px;
   background: #fff;
+  -webkit-box-shadow: 0px 0px 5px #ddd;
+  box-shadow: 0px 0px 5px #ddd;
+  border-radius: 10px;
 }
 #profile .inner .base-info #avatar {
   display: block;
@@ -807,6 +812,9 @@ code {
 }
 .article-inner {
   overflow: hidden;
+  -webkit-box-shadow: 0px 0px 5px #ddd;
+  box-shadow: 0px 0px 5px #ddd;
+  border-radius: 10px;
 }
 .article-banner {
   width: 100%;
@@ -1417,6 +1425,9 @@ ol.toc {
 #comments {
   padding: 20px;
   margin: 20px 0;
+  -webkit-box-shadow: 0px 0px 5px #ddd;
+  box-shadow: 0px 0px 5px #ddd;
+  border-radius: 10px;
 }
 #comments a {
   color: #38b7ea;
