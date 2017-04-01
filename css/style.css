@@ -170,7 +170,7 @@ code {
   width: 40px;
   height: 40px;
   background-repeat: no-repeat;
-  background-image: url("images/logo.png");
+  background-image: url("images/st.png");
   -webkit-background-size: 40px 40px;
   -moz-background-size: 40px 40px;
   background-size: 40px 40px;
@@ -1695,6 +1695,9 @@ ol.toc {
   background-color: #38b7ea;
 }
 .timeline-row .content {
+  -webkit-box-shadow: 0px 0px 5px #ddd;
+  box-shadow: 0px 0px 5px #ddd;
+  border-radius: 10px;
   margin-left: 25px;
   position: relative;
 }
@@ -1865,7 +1868,7 @@ ol.toc {
 .widget ol .category-list-child {
   padding: 6px 0;
   font-size: 14px;
-  border-bottom: 1px solid border-color;
+  border-bottom: 1px solid #e6e6e6;
 }
 .widget ul li a,
 .widget ol li a,
@@ -1967,6 +1970,9 @@ ol.toc {
   display: block;
   position: relative;
   overflow: hidden;
+  border-radius: 10px;
+  -webkit-box-shadow: 2px 2px 5px #a9a9a9;
+  box-shadow: 2px 2px 5px #a9a9a9;
 }
 #recent-post li .item-thumbnail .thumbnail span {
   width: 100%;
