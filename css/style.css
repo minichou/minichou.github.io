@@ -483,6 +483,14 @@ code {
 .main-nav-link {
   font-weight: 500;
 }
+@media screen and (max-width: 559px) {
+  .main-nav-link .nav-link-text {
+    display: none;
+  }
+}
+.main-nav-link .fa {
+  margin-right: 3px;
+}
 @media screen and (min-width: 1200px) {
   #sub-nav {
     display: none;
@@ -629,21 +637,29 @@ code {
 }
 .list-tags a {
   margin: 2px 0px;
-  background: #38b7ea;
   display: inline-block;
-  border: 1px solid rgba(255,255,255,0.8);
-  border-radius: 999em;
+  border-radius: 3px;
   padding: 0 10px;
-  color: #fff;
   line-height: 24px;
   font-size: 14px;
   text-decoration: none;
+  color: #349ef3 !important;
+  border: 1px solid #349ef3;
+}
+.list-tags a:visited {
+  cursor: pointer;
+  color: #349ef3;
+  text-decoration: none;
 }
 .list-tags a:active {
-  background-color: #666;
+  cursor: pointer;
+  color: #349ef3;
+  text-decoration: none;
 }
 .list-tags a:hover {
-  background-color: #666;
+  cursor: pointer;
+  color: #349ef3;
+  text-decoration: none;
 }
 .list-categories {
   background: #fff;
@@ -1829,6 +1845,16 @@ ol.toc {
     float: left;
     width: 25.333333333333336%;
     margin: 0 0.666666666666667%;
+  }
+}
+@media screen and (min-width: 560px) and (max-width: 799px) {
+  #sidebar {
+    display: none;
+  }
+}
+@media screen and (max-width: 559px) {
+  #sidebar {
+    display: none;
   }
 }
 .widget {
