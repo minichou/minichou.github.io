@@ -665,7 +665,7 @@ code {
   background: #fff;
   -webkit-box-shadow: 0px 0px 5px #ddd;
   box-shadow: 0px 0px 5px #ddd;
-  border-radius: 10px;
+  border-radius: 0px;
 }
 .bio {
   text-align: center;
@@ -705,7 +705,7 @@ code {
   background: #fff;
   -webkit-box-shadow: 0px 0px 5px #ddd;
   box-shadow: 0px 0px 5px #ddd;
-  border-radius: 10px;
+  border-radius: 0px;
 }
 #profile .inner .base-info #avatar {
   display: block;
@@ -860,7 +860,7 @@ code {
   overflow: hidden;
   -webkit-box-shadow: 0px 0px 5px #ddd;
   box-shadow: 0px 0px 5px #ddd;
-  border-radius: 10px;
+  border-radius: 0px;
 }
 .article-inner:hover {
   -webkit-transition: box-shadow 0.25s;
@@ -1018,6 +1018,9 @@ a.article-title:hover {
   padding: 5px 10px 5px 20px;
   background: #fcfcfc;
   border-left: 4px solid #38b7ea;
+}
+.article-entry blockquote p {
+  margin: 0.5em 0;
 }
 .article-entry blockquote footer {
   font-size: 14px;
@@ -1483,7 +1486,7 @@ ol.toc {
   margin: 20px 0;
   -webkit-box-shadow: 0px 0px 5px #ddd;
   box-shadow: 0px 0px 5px #ddd;
-  border-radius: 10px;
+  border-radius: 0px;
 }
 #comments a {
   color: #38b7ea;
@@ -1753,7 +1756,7 @@ ol.toc {
 .timeline-row .content {
   -webkit-box-shadow: 0px 0px 5px #ddd;
   box-shadow: 0px 0px 5px #ddd;
-  border-radius: 10px;
+  border-radius: 0px;
   margin-left: 25px;
   position: relative;
 }
@@ -2049,9 +2052,9 @@ ol.toc {
   display: block;
   position: relative;
   overflow: hidden;
-  border-radius: 10px;
   -webkit-box-shadow: 2px 2px 5px #a9a9a9;
   box-shadow: 2px 2px 5px #a9a9a9;
+  border-radius: 0px;
 }
 #recent-post li .item-thumbnail .thumbnail span {
   width: 100%;
